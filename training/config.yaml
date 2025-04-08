@@ -4,6 +4,7 @@ task: null  # will auto-generate if left null
 data_path: "../data/sample_train.h5"
 model_dir: "../models/weight/"
 batch_size: 32
+image_shape: [1, 64, 64, 64]  # 3D image shape. do not change unless you know what dataset you are using
 attributes:
   - ABS_f_D
   - CT_f_D_tort1

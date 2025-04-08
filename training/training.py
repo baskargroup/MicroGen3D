@@ -34,6 +34,7 @@ data = ImageDataModule(
     batch_size=config['batch_size'],
     data_path=data_path,
     attributes=config['attributes'],
+    image_shape=config['image_shape'],
     transform=None
 )
 data.setup()
