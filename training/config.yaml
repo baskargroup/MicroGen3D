@@ -1,21 +1,28 @@
-batch_size: 32
-max_epochs: 1
-latent_dim: 1
-kld_loss_weight: 1e-6
-task: null  # or specify a name like "VAE_custom_run"
 
-num_features: 3
-
-pretrained: false
-pretrained_path: ""
+# General settings
+task: null  # will auto-generate if left null
 data_path: "../data/sample_train.h5"
 model_dir: "../models/weight/"
-
-timesteps: 1000
-n_feat: 128
-learning_rate: 1e-6
-
+batch_size: 32
 attributes:
   - ABS_f_D
   - CT_f_D_tort1
   - CT_f_A_tort1
+
+# VAE settings
+vae:
+  latent_dim: 1 # number of channels in the latent space
+  kld_loss_weight: 0.000001
+  max_epochs: 1
+
+# FP settings
+fp:
+  dropout: 0.1
+  max_epochs: 2
+
+# DDPM settings
+ddpm:
+  timesteps: 1000
+  n_feat: 64  # 512
+  learning_rate: 0.000001
+  max_epochs: 1

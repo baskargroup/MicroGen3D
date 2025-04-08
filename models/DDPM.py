@@ -5,26 +5,6 @@ from tqdm import tqdm
 from einops import rearrange
 from torchvision.utils import save_image, make_grid
 import sys
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
-
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# vae_path = 'vae.ckpt'
-# vae = VAE (latent_dim=1)
-# checkpoint_vae = torch.load (vae_path, map_location=device)
-# vae.load_state_dict(checkpoint_vae['state_dict'])
-# vae = vae.to(device)
-# print('VAE loaded')
-
-# fc_path = 'fp.ckpt'
-# num_features = len(dataloader.attributes)
-# fc = SimpleFC(input_size=512, output_size=num_features)
-# checkpoint_fc = torch.load (fc_path, map_location=device)
-# fc.load_state_dict(checkpoint_fc['state_dict'])
-# fc = fc.to(device)
-# print('FP loaded')
-
-
 import torch
 from torch import nn
 from pytorch_lightning import LightningModule, Trainer
@@ -48,6 +28,7 @@ class LatentDDPM(pl.LightningModule):
 
         self.vae = vae
         self.fp = fp
+        self.context_dim = context_dim
 
         self.nn_model = UNet(in_channels=1, out_channels=1, n_feat=n_feat, context_dim=context_dim)
 
@@ -133,7 +114,7 @@ class LatentDDPM(pl.LightningModule):
             z = self.vae.reparameterize(mu, logvar)
             # in this run volume fraction is the context
             features = self.fp(z.flatten(start_dim=1))
-            features = features[:,:3]
+            features = features[:,:self.context_dim]
             self.context = features 
         return z
 
