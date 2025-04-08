@@ -1,0 +1,10 @@
+batch_size: 32
+max_epochs: 2
+latent_dim: 1
+kld_loss_weight: 1e-6
+task: null  # or specify a name like "VAE_custom_run"
+
+pretrained: false
+pretrained_path: ""
+data_path: "../data/sample_train.h5"
+model_dir: "../models/weight/"
