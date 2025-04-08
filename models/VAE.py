@@ -113,7 +113,7 @@ class VAE(pl.LightningModule):
         return self.decoder(z), mu, logvar
     
     def step(self, batch, batch_idx):
-        x = batch
+        x, _ = batch
         x_hat, mu, logvar = self.forward(x)
 
         recon_loss = nn.functional.mse_loss(x_hat, x)

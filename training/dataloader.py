@@ -3,6 +3,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import h5py
 
+
+attributes = ['ABS_f_D', 'CT_f_D_tort1', 'CT_f_A_tort1']
+
 class H5Dataset(Dataset):
     def __init__(self, file_path, transform=None):
         super(H5Dataset, self).__init__()
@@ -14,10 +17,17 @@ class H5Dataset(Dataset):
     def __getitem__(self, index):
         with h5py.File(self.file_path, 'r') as h5_file:
             # Load image data
-            image = torch.from_numpy(h5_file[self.keys[index]][:].reshape(1, 64,64,64)).float()
+            image = torch.from_numpy(h5_file[self.keys[index]][:].reshape(1,64,64,64)).float()
 
+            # Load labels (the 2nd and 3rd attributes)
+            attrs = h5_file[self.keys[index]].attrs
+            #label = torch.tensor([attrs['CT_f_A_tort1'], attrs['CT_f_D_tort1']], dtype=torch.float)
+            label = torch.tensor([attrs[attr] for attr in attributes], dtype=torch.float)
 
-        return image 
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label
 
     def __len__(self):
         return len(self.keys)
