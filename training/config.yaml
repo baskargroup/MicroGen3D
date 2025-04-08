@@ -12,6 +12,9 @@ data_path: "../data/sample_train.h5"
 model_dir: "../models/weight/"
 
 timesteps: 1000
+n_feat: 128
+learning_rate: 1e-6
+
 attributes:
   - ABS_f_D
   - CT_f_D_tort1

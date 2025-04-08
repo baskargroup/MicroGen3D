@@ -108,5 +108,31 @@ print('Training FP complete')
 # Save the final model
 torch.save(fp.state_dict(), os.path.join(model_dir, f"fp_{config['task']}_final_model.pth"))
 
+#############################################################################################
+#training DDPM
+checkpoint_callback = ModelCheckpoint(
+    monitor='val_loss',
+    dirpath=model_dir,
+    filename=f"{config['task']}_ddpm",
+    save_top_k=2,
+    mode='min',
+)
+
+
+ddpm = DDPM(
+    n_T=config['timesteps'],
+    n_feat=config['n_feat'],
+    learning_rate=float(config['learning_rate']),
+    T_max=config['max_epochs'],
+    context_dim=num_features,
+    vae=vae,
+    fp=fp
+)
+trainer_ddpm = pl.Trainer(max_epochs = config['max_epochs'], logger = wandb_logger, callbacks=[checkpoint_callback])
+trainer_ddpm.fit(ddpm, train_loader, val_loader)
+print('Training DDPM complete')
+
+# Save the final model
+torch.save(ddpm.state_dict(), os.path.join(model_dir, f"ddpm_{config['task']}_final_model.pth"))
 
 
