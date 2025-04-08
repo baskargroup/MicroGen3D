@@ -1,7 +1,10 @@
 # Byte-compiled / optimized / DLL files
+data/*h5
+models/weight/*
 __pycache__/
 *.py[cod]
 *$py.class
+lightning_logs/
 
 # C extensions
 *.so
