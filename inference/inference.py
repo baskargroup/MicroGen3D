@@ -19,19 +19,43 @@ from utils import preprocessors, numpy_exporters
 with open('params.yaml', 'r') as f:
     config = yaml.safe_load(f)
 
-# Extract config values
-data_path = config['data_path']
-batch_size = config['training']['batch_size']
-num_timesteps = config['training']['num_timesteps']
-learning_rate = config['training']['learning_rate']
-max_epochs = config['training']['max_epochs']
-n_feat = config['model']['n_feat']
-image_shape = config['model']['image_shape']
-attributes = config['attributes']
-ddpm_path = config['paths']['ddpm_path']
-vae_path = config['paths']['vae_path']
-fc_path = config['paths']['fc_path']
-output_dir = config['paths']['output_dir']
+import warnings
+
+def get_config_value(config, keys, default=None, warn=True):
+    """Safely access nested config keys with optional default and warning."""
+    curr = config
+    for key in keys:
+        if key in curr:
+            curr = curr[key]
+        else:
+            if warn:
+                warnings.warn(f"Missing config key: {'.'.join(keys)}. Using default: {default}")
+            return default
+    return curr
+
+# Load config values with defaults and warnings
+data_path = config.get('data_path', '../data/sample_test.h5')
+if 'data_path' not in config:
+    warnings.warn(f"'data_path' not found. Defaulting to {data_path}")
+
+attributes = config.get('attributes', ['attribute1', 'attribute2', 'attribute3'])
+if 'attributes' not in config:
+    warnings.warn(f"'attributes' not found. Defaulting to {attributes}")
+
+ddpm_path = get_config_value(config, ['paths', 'ddpm_path'], './models/checkpoints')
+vae_path = get_config_value(config, ['paths', 'vae_path'], './models/vae.ckpt')
+fc_path = get_config_value(config, ['paths', 'fc_path'], './models/fp.ckpt')
+output_dir = get_config_value(config, ['paths', 'output_dir'], './output_dir')
+
+num_timesteps = get_config_value(config, ['training', 'num_timesteps'], 1000)
+learning_rate = get_config_value(config, ['training', 'learning_rate'], 1e-6)
+max_epochs = get_config_value(config, ['training', 'max_epochs'], 100)
+batch_size = get_config_value(config, ['training', 'batch_size'], 20)
+num_batchs = get_config_value(config, ['training', 'num_batches'], 1)
+
+n_feat = get_config_value(config, ['model', 'n_feat'], 512)
+image_shape = get_config_value(config, ['model', 'image_shape'], [1, 64, 64, 64])
+
 
 print('Loading data...')
 data = ImageDataModule(
@@ -84,33 +108,35 @@ print('DDPM loaded')
 
 
 # Run inference
-params = {}
-x = next(iter(val_loader))[0].to(device)
-with torch.no_grad():
-    mu, logvar = vae.encoder(x)
-    z = vae.reparameterize(mu, logvar)
-    x_hat = vae.decoder(z)
-    features = fp(z.flatten(start_dim=1))
-    z_rand = torch.randn(batch_size, 1, 8, 8, 8).to(device)
-    print("Denoising image")
-    z_hat, _ = DDPM.sample_loop(z, features)
-    x_generated = vae.decoder(z_hat)
 
-# Save outputs
-for i in tqdm(range(batch_size)):
-    base_name = str(i)
+for n in range(num_batchs):
+    params = {}
+    x = next(iter(val_loader))[0].to(device)
+    with torch.no_grad():
+        mu, logvar = vae.encoder(x)
+        z = vae.reparameterize(mu, logvar)
+        x_hat = vae.decoder(z)
+        features = fp(z.flatten(start_dim=1))
+        z_rand = torch.randn(batch_size, 1, 8, 8, 8).to(device)
+        print("Denoising image")
+        z_hat, _ = DDPM.sample_loop(z, features)
+        x_generated = vae.decoder(z_hat)
 
-    for name, array in {
-        "original": x[i],
-        "reconstructed_raw": x_hat[i],
-        "reconstructed_threshold": (x_hat[i] > 0.5).float(),
-        "generated_raw": x_generated[i],
-        "generated_threshold": (x_generated[i] > 0.5).float()
-    }.items():
-        params = {
-            'path': os.path.join(output_dir, name),
-            'file_name': base_name,
-            'arr': array.squeeze().cpu().numpy()
-        }
-        exporter = numpy_exporters.ToVti(**params)
-        exporter.export()
+    # Save outputs
+    for i in tqdm(range(batch_size)):
+        base_name = f"batch_{n}_sample_{i}.vti"
+
+        for name, array in {
+            "original": x[i],
+            "reconstructed_raw": x_hat[i],
+            "reconstructed_threshold": (x_hat[i] > 0.5).float(),
+            "generated_raw": x_generated[i],
+            "generated_threshold": (x_generated[i] > 0.5).float()
+        }.items():
+            params = {
+                'path': os.path.join(output_dir, name),
+                'file_name': base_name,
+                'arr': array.squeeze().cpu().numpy()
+            }
+            exporter = numpy_exporters.ToVti(**params)
+            exporter.export()
