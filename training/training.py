@@ -72,9 +72,19 @@ torch.save(vae.state_dict(), os.path.join(model_dir, f"vae_{config['task']}_fina
 
 #################################
 # Train FP
+# calculate input size. 
+vae.eval()
+with torch.no_grad():
+    dummy_input = torch.randn(1, *config['image_shape'])
+    encoded = vae.encoder(dummy_input)
+    print(f"Encoded shape: {encoded[0].shape}")
+    encoded_shape = encoded[0].flatten(start_dim=1).shape[1]
+    print(f"Encoded shape after flattening: {encoded_shape}")
+
 fp_cfg = config['fp']
 num_features = len(config['attributes'])
 fp = SimpleFC(
+    input_size=encoded_shape,
     output_size=num_features,
     vae=vae,
     T_max=fp_cfg['max_epochs'],
@@ -95,7 +105,8 @@ ddpm = DDPM(
     T_max=ddpm_cfg['max_epochs'],
     context_dim=num_features,
     vae=vae,
-    fp=fp
+    fp=fp,
+    input_output_channels=vae_cfg['latent_dim']
 )
 print('Training DDPM...')
 trainer = pl.Trainer(max_epochs=ddpm_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('ddpm', 'val_loss')])

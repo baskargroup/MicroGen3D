@@ -23,14 +23,15 @@ def linear_beta_schedule(timesteps):
     return torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float32)
 
 class LatentDDPM(pl.LightningModule):
-    def __init__(self, vae, fp, n_T=1000, n_feat=128, learning_rate=1e-5, T_max = 500, context_dim=3):
+    def __init__(self, vae, fp, n_T=1000, n_feat=128, learning_rate=1e-5, T_max = 500, context_dim=3, input_output_channels=1):
         super(LatentDDPM, self).__init__()
 
         self.vae = vae
         self.fp = fp
         self.context_dim = context_dim
+        self.io_channels = input_output_channels
 
-        self.nn_model = UNet(in_channels=1, out_channels=1, n_feat=n_feat, context_dim=context_dim)
+        self.nn_model = UNet(in_channels=self.io_channels, out_channels=self.io_channels, n_feat=n_feat, context_dim=context_dim)
 
         # setting up the diffusion part
         self.betas = linear_beta_schedule(n_T)

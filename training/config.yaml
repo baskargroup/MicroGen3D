@@ -12,7 +12,7 @@ attributes:
 
 # VAE settings
 vae:
-  latent_dim: 1 # number of channels in the latent space
+  latent_dim: 4 # number of channels in the latent space
   kld_loss_weight: 0.000001
   max_epochs: 1
 
