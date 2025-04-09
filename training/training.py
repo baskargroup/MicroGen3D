@@ -59,20 +59,29 @@ print(config)
 
 #################################
 # Train VAE
+# Initialize VAE
 vae_cfg = config['vae']
 vae = VAE(
     latent_dim=vae_cfg['latent_dim'],
     T_max=vae_cfg['max_epochs'],
     kld_loss_weight=float(vae_cfg['kld_loss_weight'])
 )
-print('Training VAE...')
-trainer = pl.Trainer(max_epochs=vae_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('vae', 'val_recon_loss')])
-trainer.fit(vae, train_loader, val_loader)
-torch.save(vae.state_dict(), os.path.join(model_dir, f"vae_{config['task']}_final_model.pth"))
+
+# Load pretrained VAE if specified
+if vae_cfg.get('pretrained', False):
+    assert os.path.isfile(vae_cfg['pretrained_path']), f"VAE pretrained model not found at {vae_cfg['pretrained_path']}"
+    vae.load_state_dict(torch.load(vae_cfg['pretrained_path']))
+    print(f"Loaded pretrained VAE from {vae_cfg['pretrained_path']}")
+else:
+    print('Training VAE...')
+    trainer = pl.Trainer(max_epochs=vae_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('vae', 'val_recon_loss')])
+    trainer.fit(vae, train_loader, val_loader)
+    torch.save(vae.state_dict(), os.path.join(model_dir, f"vae_{config['task']}_final_model.pth"))
+    print('VAE training complete.')
 
 #################################
 # Train FP
-# calculate input size. 
+# Determine the encoded shape
 vae.eval()
 with torch.no_grad():
     dummy_input = torch.randn(1, *config['image_shape'])
@@ -90,10 +99,19 @@ fp = SimpleFC(
     T_max=fp_cfg['max_epochs'],
     dropout=fp_cfg.get('dropout', 0.1)
 )
-print('Training FP...')
-trainer = pl.Trainer(max_epochs=fp_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('fp', 'val_loss')])
-trainer.fit(fp, train_loader, val_loader)
-torch.save(fp.state_dict(), os.path.join(model_dir, f"fp_{config['task']}_final_model.pth"))
+
+# Load pretrained FP if specified
+if fp_cfg.get('pretrained', False):
+    assert os.path.isfile(fp_cfg['pretrained_path']), f"FP pretrained model not found at {fp_cfg['pretrained_path']}"
+    fp.load_state_dict(torch.load(fp_cfg['pretrained_path']))
+    print(f"Loaded pretrained FP from {fp_cfg['pretrained_path']}")
+else:
+    print('Training FP...')
+    trainer = pl.Trainer(max_epochs=fp_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('fp', 'val_loss')])
+    trainer.fit(fp, train_loader, val_loader)
+    torch.save(fp.state_dict(), os.path.join(model_dir, f"fp_{config['task']}_final_model.pth"))
+    print('FP training complete.')
+
 
 #################################
 # Train DDPM

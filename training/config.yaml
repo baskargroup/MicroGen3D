@@ -2,7 +2,7 @@
 # General settings
 task: null  # will auto-generate if left null
 data_path: "../data/sample_train.h5"
-model_dir: "../models/weight/"
+model_dir: "../models/weights/"
 batch_size: 32
 image_shape: [1, 64, 64, 64]  # 3D image shape. do not change unless you know what dataset you are using
 attributes:
@@ -12,14 +12,18 @@ attributes:
 
 # VAE settings
 vae:
-  latent_dim: 4 # number of channels in the latent space
+  latent_dim: 1
   kld_loss_weight: 0.000001
   max_epochs: 1
+  pretrained: false
+  pretrained_path: "../models/weights/vae_run_2025-04-08_17-33_final_model.pth"  # full path to pretrained vae .ckpt
 
 # FP settings
 fp:
   dropout: 0.1
   max_epochs: 2
+  pretrained: false
+  pretrained_path: "../models/weights/fp_run_2025-04-08_17-33_final_model.pth"  # full path to pretrained fp .ckpt
 
 # DDPM settings
 ddpm:

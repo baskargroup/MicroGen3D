@@ -1,6 +1,6 @@
 # Byte-compiled / optimized / DLL files
 data/*h5
-models/weight/*
+models/weights/*
 __pycache__/
 *.py[cod]
 *$py.class
