@@ -92,13 +92,13 @@ class Decoder(nn.Module):
 
 
 class VAE(pl.LightningModule):
-    def __init__(self, latent_dim=3, max_channels=512, T_max=100, kld_loss_weight=1e-6):
+    def __init__(self, latent_dim_channels=3, max_channels=512, T_max=100, kld_loss_weight=1e-6):
         super(VAE, self).__init__()
-        self.latent_dim = latent_dim
+        self.latent_dim = latent_dim_channels
         self.T_max = T_max
         self.max_channels = max_channels
-        self.encoder = Encoder(latent_dim=latent_dim, max_channels=max_channels)
-        self.decoder = Decoder(latent_dim=latent_dim, max_channels=max_channels)
+        self.encoder = Encoder(latent_dim=latent_dim_channels, max_channels=max_channels)
+        self.decoder = Decoder(latent_dim=latent_dim_channels, max_channels=max_channels)
         self.kld_loss_weight = kld_loss_weight
         self.automatic_optimization = False
 

@@ -65,7 +65,7 @@ print(config)
 # Train VAE
 vae_cfg = config['vae']
 vae = VAE(
-    latent_dim=vae_cfg['latent_dim'],
+    latent_dim_channels=vae_cfg['latent_dim_channels'],
     T_max=vae_cfg['max_epochs'],
     kld_loss_weight=float(vae_cfg['kld_loss_weight'])
 )
@@ -143,7 +143,7 @@ ddpm = DDPM(
     context_dim=num_features,
     vae=vae,
     fp=fp,
-    input_output_channels=vae_cfg['latent_dim']
+    input_output_channels=vae_cfg['latent_dim_channels']
 )
 ddpm = ddpm.to(device)
 

@@ -73,7 +73,7 @@ print('Data loaded')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load pretrained VAE
-vae = VAE(latent_dim=1)
+vae = VAE(latent_dim_channels=1)
 checkpoint_vae = torch.load(vae_path, map_location=device)
 vae.load_state_dict(checkpoint_vae['state_dict'])
 vae = vae.to(device)
