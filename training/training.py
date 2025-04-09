@@ -133,6 +133,8 @@ fp = fp.to(device)
 #################################
 # Train DDPM
 ddpm_cfg = config['ddpm']
+fp.eval()
+vae.eval()
 ddpm = DDPM(
     n_T=ddpm_cfg['timesteps'],
     n_feat=ddpm_cfg['n_feat'],
