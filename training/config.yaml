@@ -16,14 +16,14 @@ vae:
   kld_loss_weight: 0.000001
   max_epochs: 1
   pretrained: false
-  pretrained_path: "../models/weights/vae_run_2025-04-08_17-33_final_model.pth"  # full path to pretrained vae .ckpt
+  pretrained_path: "../models/weights/vae_run_2025-04-09_14-24_final_model.pth"  # full path to pretrained vae .ckpt
 
 # FP settings
 fp:
   dropout: 0.1
   max_epochs: 2
   pretrained: false
-  pretrained_path: "../models/weights/fp_run_2025-04-08_17-33_final_model.pth"  # full path to pretrained fp .ckpt
+  pretrained_path: "../models/weights/fp_run_2025-04-09_14-24_final_model.pth"  # full path to pretrained fp .ckpt
 
 # DDPM settings
 ddpm:

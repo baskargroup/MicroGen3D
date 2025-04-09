@@ -28,6 +28,10 @@ data_path = config['data_path']
 model_dir = config['model_dir']
 os.makedirs(model_dir, exist_ok=True)
 
+# Device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 # Load data
 print('Loading data...')
 data = ImageDataModule(
@@ -35,7 +39,7 @@ data = ImageDataModule(
     data_path=data_path,
     attributes=config['attributes'],
     image_shape=config['image_shape'],
-    transform=None
+    transform=None,
 )
 data.setup()
 train_loader = data.train_dataloader()
@@ -59,7 +63,6 @@ print(config)
 
 #################################
 # Train VAE
-# Initialize VAE
 vae_cfg = config['vae']
 vae = VAE(
     latent_dim=vae_cfg['latent_dim'],
@@ -67,24 +70,31 @@ vae = VAE(
     kld_loss_weight=float(vae_cfg['kld_loss_weight'])
 )
 
-# Load pretrained VAE if specified
 if vae_cfg.get('pretrained', False):
     assert os.path.isfile(vae_cfg['pretrained_path']), f"VAE pretrained model not found at {vae_cfg['pretrained_path']}"
-    vae.load_state_dict(torch.load(vae_cfg['pretrained_path']))
+    vae.load_state_dict(torch.load(vae_cfg['pretrained_path'], map_location=device))
     print(f"Loaded pretrained VAE from {vae_cfg['pretrained_path']}")
 else:
+    vae = vae.to(device)
     print('Training VAE...')
-    trainer = pl.Trainer(max_epochs=vae_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('vae', 'val_recon_loss')])
+    trainer = pl.Trainer(
+        max_epochs=vae_cfg['max_epochs'],
+        logger=wandb_logger,
+        callbacks=[checkpoint_dir('vae', 'val_recon_loss')],
+        accelerator="auto",
+        devices=1
+    )
     trainer.fit(vae, train_loader, val_loader)
     torch.save(vae.state_dict(), os.path.join(model_dir, f"vae_{config['task']}_final_model.pth"))
     print('VAE training complete.')
 
+vae = vae.to(device)
+
 #################################
 # Train FP
-# Determine the encoded shape
+dummy_input = torch.randn(1, *config['image_shape']).to(device)
 vae.eval()
 with torch.no_grad():
-    dummy_input = torch.randn(1, *config['image_shape'])
     encoded = vae.encoder(dummy_input)
     print(f"Encoded shape: {encoded[0].shape}")
     encoded_shape = encoded[0].flatten(start_dim=1).shape[1]
@@ -100,18 +110,25 @@ fp = SimpleFC(
     dropout=fp_cfg.get('dropout', 0.1)
 )
 
-# Load pretrained FP if specified
 if fp_cfg.get('pretrained', False):
     assert os.path.isfile(fp_cfg['pretrained_path']), f"FP pretrained model not found at {fp_cfg['pretrained_path']}"
-    fp.load_state_dict(torch.load(fp_cfg['pretrained_path']))
+    fp.load_state_dict(torch.load(fp_cfg['pretrained_path'], map_location=device))
     print(f"Loaded pretrained FP from {fp_cfg['pretrained_path']}")
 else:
+    fp = fp.to(device)
     print('Training FP...')
-    trainer = pl.Trainer(max_epochs=fp_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('fp', 'val_loss')])
+    trainer = pl.Trainer(
+        max_epochs=fp_cfg['max_epochs'],
+        logger=wandb_logger,
+        callbacks=[checkpoint_dir('fp', 'val_loss')],
+        accelerator="auto",
+        devices=1
+    )
     trainer.fit(fp, train_loader, val_loader)
     torch.save(fp.state_dict(), os.path.join(model_dir, f"fp_{config['task']}_final_model.pth"))
     print('FP training complete.')
 
+fp = fp.to(device)
 
 #################################
 # Train DDPM
@@ -126,8 +143,16 @@ ddpm = DDPM(
     fp=fp,
     input_output_channels=vae_cfg['latent_dim']
 )
+ddpm = ddpm.to(device)
+
 print('Training DDPM...')
-trainer = pl.Trainer(max_epochs=ddpm_cfg['max_epochs'], logger=wandb_logger, callbacks=[checkpoint_dir('ddpm', 'val_loss')])
+trainer = pl.Trainer(
+    max_epochs=ddpm_cfg['max_epochs'],
+    logger=wandb_logger,
+    callbacks=[checkpoint_dir('ddpm', 'val_loss')],
+    accelerator="auto",
+    devices=1
+)
 trainer.fit(ddpm, train_loader, val_loader)
 torch.save(ddpm.state_dict(), os.path.join(model_dir, f"ddpm_{config['task']}_final_model.pth"))
 
