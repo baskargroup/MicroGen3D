@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from models.VAE import VAE
 from models.FP import SimpleFC
 from models.DDPM import LatentDDPM as DDPM
+from models.transform import vae_encoder_transform, fp_transform
 from training.dataloader import ImageDataModule
 from utils import preprocessors, numpy_exporters
 
@@ -53,6 +54,7 @@ max_epochs = get_config_value(config, ['training', 'max_epochs'], 100)
 batch_size = get_config_value(config, ['training', 'batch_size'], 20)
 num_batchs = get_config_value(config, ['training', 'num_batches'], 1)
 
+vae_latent_dim_channels = get_config_value(config, ['model', 'vae_latent_dim_channels'], 1)
 n_feat = get_config_value(config, ['model', 'n_feat'], 512)
 image_shape = get_config_value(config, ['model', 'image_shape'], [1, 64, 64, 64])
 
@@ -73,7 +75,7 @@ print('Data loaded')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load pretrained VAE
-vae = VAE(latent_dim_channels=1)
+vae = VAE(latent_dim_channels=vae_latent_dim_channels)
 checkpoint_vae = torch.load(vae_path, map_location=device)
 vae.load_state_dict(checkpoint_vae['state_dict'])
 vae = vae.to(device)
@@ -90,9 +92,9 @@ with torch.no_grad():
 
 num_features = len(attributes)
 fp = SimpleFC(
+    vae_encoder_transform=vae_encoder_transform(vae),
     input_size=encoded_shape,
-    output_size=num_features,
-    vae=vae
+    output_size=num_features
 )
 checkpoint_fc = torch.load(fc_path, map_location=device)
 fp.load_state_dict(checkpoint_fc['state_dict'])
@@ -100,10 +102,17 @@ fp = fp.to(device)
 print('Feature predictor loaded')
 
 # Load pretrained DDPM
-DDPM = DDPM(vae=vae, fp=fp, n_T=num_timesteps, n_feat=n_feat, learning_rate=learning_rate, T_max=max_epochs)
+ddpm = DDPM(
+    vae_encoder_transform=vae_encoder_transform(vae),
+    fp_transform=fp_transform(fp),
+    n_T=num_timesteps,
+    n_feat=n_feat,
+    learning_rate=learning_rate,
+    T_max=max_epochs
+)
 checkpoint_ddpm = torch.load(ddpm_path, map_location=device)
-DDPM.load_state_dict(checkpoint_ddpm['state_dict'])
-DDPM = DDPM.to(device)
+ddpm.load_state_dict(checkpoint_ddpm['state_dict'])
+ddpm = ddpm.to(device)
 print('DDPM loaded')
 
 
@@ -119,7 +128,7 @@ for n in range(num_batchs):
         features = fp(z.flatten(start_dim=1))
         z_rand = torch.randn(batch_size, 1, 8, 8, 8).to(device)
         print("Denoising image")
-        z_hat, _ = DDPM.sample_loop(z, features)
+        z_hat, _ = ddpm.sample_loop(z, features)
         x_generated = vae.decoder(z_hat)
 
     # Save outputs
