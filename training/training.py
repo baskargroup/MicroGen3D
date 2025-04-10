@@ -13,6 +13,7 @@ from models.VAE import VAE
 from models.FP import SimpleFC
 from models.DDPM import LatentDDPM as DDPM
 from dataloader import ImageDataModule
+from models.transform import vae_encoder_transform, fp_transform
 
 # Load config
 with open("config.yaml", "r") as f:
@@ -52,7 +53,7 @@ def checkpoint_dir(name, monitor, mode='min'):
         monitor=monitor,
         dirpath=model_dir,
         filename=f"{config['task']}_{name}",
-        save_top_k=2,
+        save_top_k=1,
         mode=mode
     )
 
@@ -103,25 +104,13 @@ with torch.no_grad():
 fp_cfg = config['fp']
 num_features = len(config['attributes'])
 
-def make_transform_fn(vae):
-    def transform(x):
-        with torch.no_grad():  # Ensure VAE doesn't track gradients
-            mu, logvar = vae.encoder(x)
-            z = vae.reparameterize(mu, logvar)
-            z = z.flatten(start_dim=1)
-        return z
-    return transform
-
-transform_fn = make_transform_fn(vae)
-
 fp = SimpleFC(
     input_size=encoded_shape,
     output_size=num_features,
-    transform_fn=transform_fn,
+    vae_encoder_transform=vae_encoder_transform(vae),
     T_max=fp_cfg['max_epochs'],
     dropout=fp_cfg.get('dropout', 0.1)
 )
-
 
 if fp_cfg.get('pretrained', False):
     assert os.path.isfile(fp_cfg['pretrained_path']), f"FP pretrained model not found at {fp_cfg['pretrained_path']}"
@@ -154,8 +143,8 @@ ddpm = DDPM(
     learning_rate=float(ddpm_cfg['learning_rate']),
     T_max=ddpm_cfg['max_epochs'],
     context_dim=num_features,
-    vae=vae,
-    fp=fp,
+    vae_encoder_transform=vae_encoder_transform(vae),
+    fp_transform=fp_transform(fp),
     input_output_channels=vae_cfg['latent_dim_channels']
 )
 ddpm = ddpm.to(device)

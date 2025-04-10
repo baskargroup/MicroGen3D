@@ -5,10 +5,10 @@ import pytorch_lightning as pl
 import sys
 
 class SimpleFC(pl.LightningModule):
-    def __init__(self, transform_fn, input_size=512, output_size=2, T_max=100, dropout=0.1):
+    def __init__(self, vae_encoder_transform, input_size=512, output_size=2, T_max=100, dropout=0.1):
         super(SimpleFC, self).__init__()
 
-        self.transform_fn = transform_fn
+        self.vae_encoder_transform = vae_encoder_transform
         self.T_max = T_max
         self.dropout = dropout
 
@@ -39,16 +39,16 @@ class SimpleFC(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        x_t = self.transform_fn(x)  # Call external transform
-        y_hat = self(x_t)
+        x_t = self.vae_encoder_transform(x)  # Call external transform
+        y_hat = self(x_t.flatten(start_dim=1))
         loss = F.mse_loss(y_hat, y)
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        x_t = self.transform_fn(x)
-        y_hat = self(x_t)
+        x_t = self.vae_encoder_transform(x)
+        y_hat = self(x_t.flatten(start_dim=1))
         loss = F.mse_loss(y_hat, y)
         self.log('val_loss', loss)
         return loss

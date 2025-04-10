@@ -23,11 +23,11 @@ def linear_beta_schedule(timesteps):
     return torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float32)
 
 class LatentDDPM(pl.LightningModule):
-    def __init__(self, vae, fp, n_T=1000, n_feat=128, learning_rate=1e-5, T_max = 500, context_dim=3, input_output_channels=1):
+    def __init__(self, vae_encoder_transform, fp_transform, n_T=1000, n_feat=128, learning_rate=1e-5, T_max = 500, context_dim=3, input_output_channels=1):
         super(LatentDDPM, self).__init__()
 
-        self.vae = vae
-        self.fp = fp
+        self.vae_encoder_transform = vae_encoder_transform
+        self.fp_transform = fp_transform
         self.context_dim = context_dim
         self.io_channels = input_output_channels
 
@@ -111,10 +111,8 @@ class LatentDDPM(pl.LightningModule):
 
     def _transform(self,images):
         with torch.no_grad():
-            mu, logvar = self.vae.encoder(images)
-            z = self.vae.reparameterize(mu, logvar)
-            # in this run volume fraction is the context
-            features = self.fp(z.flatten(start_dim=1))
+            z = self.vae_encoder_transform(images) 
+            features = self.fp_transform(z)
             features = features[:,:self.context_dim]
             self.context = features 
         return z
