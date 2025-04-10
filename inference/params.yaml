@@ -8,7 +8,8 @@ training:  # just for initialization of the model
   max_epochs: 100
 
 model:
-  n_feat: 64
+  vae_latent_dim_channels: 1
+  n_feat: 512
   image_shape: [1, 64, 64, 64]
 
 attributes:

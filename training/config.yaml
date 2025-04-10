@@ -1,6 +1,6 @@
 
 # General settings
-task: null  # will auto-generate if left null
+task: "_"  # will auto-generate if left null
 data_path: "../data/sample_train.h5"
 model_dir: "../models/weights/"
 batch_size: 32
@@ -16,18 +16,18 @@ vae:
   kld_loss_weight: 0.000001
   max_epochs: 1
   pretrained: false
-  pretrained_path: "../models/weights/vae_run_2025-04-09_14-24_final_model.pth"  # full path to pretrained vae .ckpt
+  pretrained_path: "../models/weights/vae.ckpt"  # full path to pretrained vae .ckpt
 
 # FP settings
 fp:
   dropout: 0.1
   max_epochs: 2
   pretrained: false
-  pretrained_path: "../models/weights/fp_run_2025-04-09_14-24_final_model.pth"  # full path to pretrained fp .ckpt
+  pretrained_path: "../models/weights/fp.ckpt"  # full path to pretrained fp .ckpt
 
 # DDPM settings
 ddpm:
   timesteps: 1000
-  n_feat: 64  # 512
+  n_feat: 512  # 512
   learning_rate: 0.000001
   max_epochs: 1

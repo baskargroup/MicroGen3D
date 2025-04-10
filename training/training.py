@@ -73,7 +73,11 @@ vae = VAE(
 
 if vae_cfg.get('pretrained', False):
     assert os.path.isfile(vae_cfg['pretrained_path']), f"VAE pretrained model not found at {vae_cfg['pretrained_path']}"
-    vae.load_state_dict(torch.load(vae_cfg['pretrained_path'], map_location=device))
+    checkpoint_vae = torch.load(vae_cfg['pretrained_path'], map_location=device)
+    vae.load_state_dict(checkpoint_vae['state_dict'])
+    vae = vae.to(device)
+    
+    # vae.load_state_dict(torch.load(vae_cfg['pretrained_path'], map_location=device))
     print(f"Loaded pretrained VAE from {vae_cfg['pretrained_path']}")
 else:
     vae = vae.to(device)
@@ -114,7 +118,10 @@ fp = SimpleFC(
 
 if fp_cfg.get('pretrained', False):
     assert os.path.isfile(fp_cfg['pretrained_path']), f"FP pretrained model not found at {fp_cfg['pretrained_path']}"
-    fp.load_state_dict(torch.load(fp_cfg['pretrained_path'], map_location=device))
+    checkpoint_fp = torch.load(fp_cfg['pretrained_path'], map_location=device)
+    fp.load_state_dict(checkpoint_fp['state_dict'])
+    fp = fp.to(device)
+    # fp.load_state_dict(torch.load(fp_cfg['pretrained_path'], map_location=device))
     print(f"Loaded pretrained FP from {fp_cfg['pretrained_path']}")
 else:
     fp = fp.to(device)
