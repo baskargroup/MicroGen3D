@@ -2,35 +2,39 @@
 
  MicroGen3D is a conditional latent diffusion model framework for generating high-resolution 3D multiphase microstructures with user-defined attributes such as volume fraction and tortuosity. Designed to accelerate materials discovery, it can synthesizes microstructures within a few seconds and predicts associated manufacturing parameters.
 
-## 📦 Setup Instructions
+## 🚀 Quick Start
 
-### 1. Clone the Repository
-```bash
-git clone https://your-repo-url.git
-cd your-repo-name
-```
+### 🔧 Setup Instructions
 
-### 2. Set Up Python Virtual Environment
-Create and activate a virtual environment:
 ```bash
+# 1. Clone the repo
+git clone https://github.com/baskargroup/MicroGen3D.git
+cd MicroGen3D
+
+# 2. Set up environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 
-### 3. Install Required Packages
-```bash
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Download dataset and weights (Hugging Face)
+# Make sure HF CLI is installed and you're logged in: `huggingface-cli login`
 ```
 
-## 📁 Download Sample Data and Pretrained Weights
+```python
+from huggingface_hub import hf_hub_download
 
-Download the representative data and pretrained model weights from:  
-**[https://mydatalinkbluh.com](https://mydatalinkbluh.com)**
+# Download sample data
+hf_hub_download(repo_id="BGLab/microgen3D", filename="sample_data.h5", repo_type="dataset", local_dir="data")
 
-Place the following files into the `data/` directory:
-- `sample_train.h5`
+# Download model weights
+hf_hub_download(repo_id="BGLab/microgen3D", filename="vae.ckpt", local_dir="models/weights/experimental")
+hf_hub_download(repo_id="BGLab/microgen3D", filename="fp.ckpt", local_dir="models/weights/experimental")
+hf_hub_download(repo_id="BGLab/microgen3D", filename="ddpm.ckpt", local_dir="models/weights/experimental")
+```
 
-Place pretrained model checkpoints into `models/weights/`.
+---
 
 ## ⚙️ Configuration
 
@@ -42,7 +46,7 @@ Place pretrained model checkpoints into `models/weights/`.
 - **image_shape**: Shape of the 3D images `[C, D, H, W]`  
 
 #### VAE Settings:
-- `latent_dim_channels`: Latent space size  
+- `latent_dim_channels`: Latent space channels size.  
 - `kld_loss_weight`: Weight of KL divergence loss  
 - `max_epochs`: Training epochs  
 - `pretrained`: Whether to use pretrained VAE  
@@ -56,7 +60,7 @@ Place pretrained model checkpoints into `models/weights/`.
 
 #### DDPM Settings:
 - `timesteps`: Number of diffusion timesteps  
-- `n_feat`: Number of base features  
+- `n_feat`: Number of feature channels for Unet. Higher the channels more model capacity. 
 - `learning_rate`: Learning rate  
 - `max_epochs`: Training epochs  
 
@@ -64,10 +68,11 @@ Place pretrained model checkpoints into `models/weights/`.
 - **data_path**: Path to inference/test dataset (`../data/sample_test.h5`)  
 
 #### Training (for model init only):
-- `batch_size`, `num_batches`, `num_timesteps`, `learning_rate`, `max_epochs`  
+- `batch_size`, `num_batches`, `num_timesteps`, `learning_rate`, `max_epochs`  : Optional parameters
 
 #### Model:
-- `n_feat`: Number of base features  
+- `latent_dim_channels`: Latent space channels size.  
+- `n_feat`: Number of feature channels for Unet.
 - `image_shape`: Expected image input shape  
 
 #### Attributes:
@@ -102,7 +107,7 @@ Make sure the paths in `params.yaml` are correctly set and pretrained models are
 
 ## 📌 Notes
 
-- Sample data and pretrained models must be downloaded from [https://mydatalinkbluh.com](https://mydatalinkbluh.com)  
+- Sample data and pretrained models must be downloaded from [here](https://huggingface.co/datasets/BGLab/microgen3D)  
 - Model outputs will be saved in the folder specified by `output_dir` in `params.yaml`  
 - Image shape and features must be consistent across config files and dataset format  
 ```
