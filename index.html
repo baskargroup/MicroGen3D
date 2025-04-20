@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your Paper Title Here</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      line-height: 1.6;
+    }
+    h1 { font-size: 2rem; }
+    .authors, .links { margin: 1rem 0; }
+    .links a {
+      display: inline-block;
+      margin-right: 1rem;
+      color: #0366d6;
+      text-decoration: none;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+    .abstract {
+      margin-top: 2rem;
+      background: #f8f8f8;
+      padding: 1rem;
+      border-left: 4px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Your Paper Title Here</h1>
+
+  <div class="authors">
+    <strong>Authors:</strong> Nirmal Baishnab, Ethan Herron, Aditya Balu, Soumik Sarkar, Adarsh Krishnamurth, Baskar Ganapathysubramanian
+  </div>
+
+  <div class="links">
+    <a href="https://github.com/baskargroup/MicroGen3D" target="_blank">GitHub Repo</a>
+    <a href="https://arxiv.org/pdf/2503.10711" target="_blank">arXiv</a>
+    <a href="https://huggingface.co/datasets/BGLab/microgen3D" target="_blank">Dataset</a>
+  </div>
+
+<div class="abstract">
+  <strong>Abstract:</strong><br>
+  The ability to generate 3D multiphase microstructures on-demand with targeted attributes can greatly accelerate the design of advanced materials. Here, we present a conditional latent diffusion model (LDM) framework that rapidly synthesizes high-fidelity 3D multiphase microstructures tailored to user specifications. Using this approach, we generate diverse two-phase and three-phase microstructures at high resolution (volumes of 128 × 128 × 64 voxels, representing over one million voxels each) within seconds, overcoming the scalability and time limitations of traditional simulation-based methods. Key design features, such as desired volume fractions and tortuosities, are incorporated as controllable inputs to guide the generative process, ensuring that the output structures meet prescribed statistical and topological targets. Moreover, the framework predicts corresponding manufacturing (processing) parameters for each generated microstructure, helping to bridge the gap between digital microstructure design and experimental fabrication. While demonstrated on organic photovoltaic (OPV) active-layer morphologies, the flexible architecture of our approach makes it readily adaptable to other material systems and microstructure datasets. By combining computational efficiency, adaptability, and experimental relevance, this framework addresses major limitations of existing methods and offers a powerful tool for accelerated materials discovery.
+</div>
+
+</body>
+</html>
