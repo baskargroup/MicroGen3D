@@ -16,19 +16,7 @@ from models.DDPM import LatentDDPM as DDPM
 from dataloader import ImageDataModule
 from models.transform import vae_encoder_transform, fp_transform
 
-# === Helper Function ===
-def get_model_config(config, model_name):
-    model_cfg = config.get(model_name, {})
-    return {
-        'max_epochs': model_cfg.get('max_epochs', 0),
-        'pretrained_path': str(model_cfg.get('pretrained_path', "") or "").strip(),
-        'dropout': model_cfg.get('dropout', 0.1),
-        'latent_dim_channels': model_cfg.get('latent_dim_channels', 1),
-        'kld_loss_weight': float(model_cfg.get('kld_loss_weight', 1e-6)),
-        'n_feat': model_cfg.get('n_feat', 512),
-        'timesteps': model_cfg.get('timesteps', 1000),
-        'learning_rate': float(model_cfg.get('learning_rate', 1e-6)),
-    }
+from config_utils import get_model_config
 
 # === Load Config ===
 with open("config.yaml", "r") as f:
