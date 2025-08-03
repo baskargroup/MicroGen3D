@@ -5,6 +5,7 @@ import datetime
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+import time
 
 # Add ../model to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -15,12 +16,26 @@ from models.DDPM import LatentDDPM as DDPM
 from dataloader import ImageDataModule
 from models.transform import vae_encoder_transform, fp_transform
 
-# Load config
+# === Helper Function ===
+def get_model_config(config, model_name):
+    model_cfg = config.get(model_name, {})
+    return {
+        'max_epochs': model_cfg.get('max_epochs', 0),
+        'pretrained_path': str(model_cfg.get('pretrained_path', "") or "").strip(),
+        'dropout': model_cfg.get('dropout', 0.1),
+        'latent_dim_channels': model_cfg.get('latent_dim_channels', 1),
+        'kld_loss_weight': float(model_cfg.get('kld_loss_weight', 1e-6)),
+        'n_feat': model_cfg.get('n_feat', 512),
+        'timesteps': model_cfg.get('timesteps', 1000),
+        'learning_rate': float(model_cfg.get('learning_rate', 1e-6)),
+    }
+
+# === Load Config ===
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
-# Auto-generate task name if not provided
-if not config.get('task'):
+# Auto-generate task name
+if not config.get('task') or config['task'] == "_":
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     config['task'] = f"run_{timestamp}"
 
@@ -33,13 +48,26 @@ os.makedirs(model_dir, exist_ok=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
+# Summary
+print("\n=== TRAINING STRATEGY SUMMARY ===")
+for model_name in ['vae', 'fp', 'ddpm']:
+    cfg = get_model_config(config, model_name)
+    pretrained = os.path.isfile(cfg['pretrained_path'])
+    if pretrained:
+        print(f"{model_name.upper()}: Load pretrained weights from '{cfg['pretrained_path']}' and train for {cfg['max_epochs']} epoch(s).")
+    else:
+        print(f"{model_name.upper()}: No pretrained weights found. Train from scratch for {cfg['max_epochs']} epoch(s).")
+print("=================================\n")
+
+time.sleep(3)  # Pause for better readability
+
 # Load data
 print('Loading data...')
 data = ImageDataModule(
-    batch_size=config['batch_size'],
+    batch_size=config.get('batch_size', 32),
     data_path=data_path,
-    attributes=config['attributes'],
-    image_shape=config['image_shape'],
+    attributes=config.get('attributes', []),
+    image_shape=config.get('image_shape', [1, 64, 64, 64]),
     transform=None,
 )
 data.setup()
@@ -47,7 +75,7 @@ train_loader = data.train_dataloader()
 val_loader = data.val_dataloader()
 print('Data loaded.')
 
-# Callbacks helper
+# Checkpoint helper
 def checkpoint_dir(name, monitor, mode='min'):
     return ModelCheckpoint(
         monitor=monitor,
@@ -57,28 +85,22 @@ def checkpoint_dir(name, monitor, mode='min'):
         mode=mode
     )
 
-wandb_logger = None  # Optional: configure later
+wandb_logger = None  # Optional
 
-print("Configuration:")
-print(config)
-
-#################################
-# Train VAE
-vae_cfg = config['vae']
+# === Train VAE ===
+vae_cfg = get_model_config(config, 'vae')
 vae = VAE(
     latent_dim_channels=vae_cfg['latent_dim_channels'],
     T_max=vae_cfg['max_epochs'],
-    kld_loss_weight=float(vae_cfg['kld_loss_weight'])
+    kld_loss_weight=vae_cfg['kld_loss_weight']
 )
-
-if vae_cfg.get('pretrained', False):
-    assert os.path.isfile(vae_cfg['pretrained_path']), f"VAE pretrained model not found at {vae_cfg['pretrained_path']}"
+if os.path.isfile(vae_cfg['pretrained_path']):
     state_dict = torch.load(vae_cfg['pretrained_path'], map_location=device)
     vae.load_state_dict(state_dict)
-    vae = vae.to(device)    
     print(f"Loaded pretrained VAE from {vae_cfg['pretrained_path']}")
-else:
-    vae = vae.to(device)
+vae = vae.to(device)
+
+if vae_cfg['max_epochs'] >= 1:
     print('Training VAE...')
     trainer = pl.Trainer(
         max_epochs=vae_cfg['max_epochs'],
@@ -93,37 +115,30 @@ else:
 
 vae = vae.to(device)
 
-#################################
-# Train FP
+# === Train FP ===
 dummy_input = torch.randn(1, *config['image_shape']).to(device)
 vae.eval()
 with torch.no_grad():
     encoded = vae.encoder(dummy_input)
-    print(f"Encoded shape: {encoded[0].shape}")
     encoded_shape = encoded[0].flatten(start_dim=1).shape[1]
-    print(f"Encoded shape after flattening: {encoded_shape}")
 
-fp_cfg = config['fp']
-num_features = len(config['attributes'])
+fp_cfg = get_model_config(config, 'fp')
+num_features = len(config.get('attributes', []))
 
 fp = SimpleFC(
     input_size=encoded_shape,
     output_size=num_features,
     vae_encoder_transform=vae_encoder_transform(vae),
     T_max=fp_cfg['max_epochs'],
-    dropout=fp_cfg.get('dropout', 0.1)
+    dropout=fp_cfg['dropout']
 )
-
-if fp_cfg.get('pretrained', False):
-    assert os.path.isfile(fp_cfg['pretrained_path']), f"FP pretrained model not found at {fp_cfg['pretrained_path']}"
+if os.path.isfile(fp_cfg['pretrained_path']):
     state_dict = torch.load(fp_cfg['pretrained_path'], map_location=device)
     fp.load_state_dict(state_dict)
-    fp = fp.to(device)
-
-    # fp.load_state_dict(torch.load(fp_cfg['pretrained_path'], map_location=device))
     print(f"Loaded pretrained FP from {fp_cfg['pretrained_path']}")
-else:
-    fp = fp.to(device)
+fp = fp.to(device)
+
+if fp_cfg['max_epochs'] >= 1:
     print('Training FP...')
     trainer = pl.Trainer(
         max_epochs=fp_cfg['max_epochs'],
@@ -138,32 +153,39 @@ else:
 
 fp = fp.to(device)
 
-#################################
-# Train DDPM
-ddpm_cfg = config['ddpm']
-fp.eval()
+# === Train DDPM ===
+ddpm_cfg = get_model_config(config, 'ddpm')
 vae.eval()
+fp.eval()
+
 ddpm = DDPM(
     n_T=ddpm_cfg['timesteps'],
     n_feat=ddpm_cfg['n_feat'],
-    learning_rate=float(ddpm_cfg['learning_rate']),
+    learning_rate=ddpm_cfg['learning_rate'],
     T_max=ddpm_cfg['max_epochs'],
     context_dim=num_features,
     vae_encoder_transform=vae_encoder_transform(vae),
     fp_transform=fp_transform(fp),
     input_output_channels=vae_cfg['latent_dim_channels']
 )
+
+if os.path.isfile(ddpm_cfg['pretrained_path']):
+    state_dict = torch.load(ddpm_cfg['pretrained_path'], map_location=device)
+    ddpm.load_state_dict(state_dict)
+    print(f"Loaded pretrained DDPM from {ddpm_cfg['pretrained_path']}")
 ddpm = ddpm.to(device)
 
-print('Training DDPM...')
-trainer = pl.Trainer(
-    max_epochs=ddpm_cfg['max_epochs'],
-    logger=wandb_logger,
-    callbacks=[checkpoint_dir('ddpm', 'val_loss')],
-    accelerator="auto",
-    devices=1
-)
-trainer.fit(ddpm, train_loader, val_loader)
-torch.save(ddpm.state_dict(), os.path.join(model_dir, f"ddpm_{config['task']}_final_model.pth"))
+if ddpm_cfg['max_epochs'] >= 1:
+    print('Training DDPM...')
+    trainer = pl.Trainer(
+        max_epochs=ddpm_cfg['max_epochs'],
+        logger=wandb_logger,
+        callbacks=[checkpoint_dir('ddpm', 'val_loss')],
+        accelerator="auto",
+        devices=1
+    )
+    trainer.fit(ddpm, train_loader, val_loader)
+    torch.save(ddpm.state_dict(), os.path.join(model_dir, f"ddpm_{config['task']}_final_model.pth"))
+    print('DDPM training complete.')
 
 print('Training pipeline complete.')
