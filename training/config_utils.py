@@ -62,3 +62,13 @@ def get_model_config(config, model_name):
         'stride1_first_layer': get_bool('stride1_first_layer', False),
         'max_channels': get_int('max_channels', 512, allow_zero=False),
     }
+
+
+def get_context_indices(config):
+    attributes = config.get("attributes", [])
+    context_attributes = config.get("context_attributes") or attributes
+
+    if not set(context_attributes).issubset(set(attributes)):
+        raise ValueError(f"context_attributes must be a subset of attributes. Got: {context_attributes}")
+
+    return [attributes.index(attr) for attr in context_attributes], context_attributes

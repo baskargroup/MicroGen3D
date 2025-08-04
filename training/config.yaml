@@ -4,7 +4,6 @@ data_path: "/work/mech-ai-scratch/nirmal/generative_model_data/total_dataset_for
 model_dir: "../models/weights/"
 batch_size: 8
 image_shape: [1, 128, 128, 64]
-#  ['norm_STAT_e', 'ABS_wf_D', 'ABS_f_D',  'DISS_wf10_D', 'CT_f_e_conn', 'CT_f_D_tort1', 'CT_f_A_tort1'] 
 attributes:
   - norm_STAT_e
   - ABS_wf_D
@@ -13,6 +12,12 @@ attributes:
   - CT_f_e_conn
   - CT_f_D_tort1
   - CT_f_A_tort1
+
+context_attributes:
+    - ABS_f_D
+    - CT_f_D_tort1
+    - CT_f_A_tort1
+
 
 # VAE settings
 vae:
@@ -36,4 +41,3 @@ ddpm:
   learning_rate: 0.000001
   max_epochs: 1
   pretrained_path: "../models/weights/CH_2phase/ddpm.pt"
-

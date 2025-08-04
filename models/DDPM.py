@@ -23,15 +23,16 @@ def linear_beta_schedule(timesteps):
     return torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float32)
 
 class LatentDDPM(pl.LightningModule):
-    def __init__(self, vae_encoder_transform, fp_transform, n_T=1000, n_feat=128, learning_rate=1e-5, T_max = 500, context_dim=3, input_output_channels=1):
+    def __init__(self, vae_encoder_transform, fp_transform, n_T=1000, n_feat=128, learning_rate=1e-5, T_max = 500, context_indices=[], input_output_channels=1):
         super(LatentDDPM, self).__init__()
 
         self.vae_encoder_transform = vae_encoder_transform
         self.fp_transform = fp_transform
-        self.context_dim = context_dim
+        self.context_indices = context_indices
+        self.context_dim = len(context_indices)
         self.io_channels = input_output_channels
 
-        self.nn_model = UNet(in_channels=self.io_channels, out_channels=self.io_channels, n_feat=n_feat, context_dim=context_dim)
+        self.nn_model = UNet(in_channels=self.io_channels, out_channels=self.io_channels, n_feat=n_feat, context_dim=self.context_dim)
 
         # setting up the diffusion part
         self.betas = linear_beta_schedule(n_T)
@@ -113,7 +114,7 @@ class LatentDDPM(pl.LightningModule):
         with torch.no_grad():
             z = self.vae_encoder_transform(images) 
             features = self.fp_transform(z)
-            features = features[:,:self.context_dim]
+            features = features[:, self.context_indices]
             self.context = features 
         return z
 

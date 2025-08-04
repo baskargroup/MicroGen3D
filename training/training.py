@@ -16,7 +16,7 @@ from models.DDPM import LatentDDPM as DDPM
 from dataloader import ImageDataModule
 from models.transform import vae_encoder_transform, fp_transform
 
-from config_utils import get_model_config
+from config_utils import *
 
 # === Load Config ===
 with open("config.yaml", "r") as f:
@@ -155,6 +155,9 @@ fp = fp.to(device)
 
 # === Train DDPM ===
 ddpm_cfg = get_model_config(config, 'ddpm')
+context_indices, context_attributes = get_context_indices(config)
+context_dim = len(context_indices)
+
 vae.eval()
 fp.eval()
 
@@ -163,11 +166,12 @@ ddpm = DDPM(
     n_feat=ddpm_cfg['n_feat'],
     learning_rate=ddpm_cfg['learning_rate'],
     T_max=ddpm_cfg['max_epochs'],
-    context_dim=num_features,
+    context_indices=context_indices,
     vae_encoder_transform=vae_encoder_transform(vae),
     fp_transform=fp_transform(fp),
     input_output_channels=vae_cfg['latent_dim_channels']
 )
+
 
 if os.path.isfile(ddpm_cfg['pretrained_path']):
     state_dict = torch.load(ddpm_cfg['pretrained_path'], map_location=device)
