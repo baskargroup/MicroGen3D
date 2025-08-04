@@ -108,6 +108,7 @@ dummy_input = torch.randn(1, *config['image_shape']).to(device)
 vae.eval()
 with torch.no_grad():
     encoded = vae.encoder(dummy_input)
+    print(f"Encoded shape: {encoded[0].shape}, Logvar shape: {encoded[1].shape}")
     encoded_shape = encoded[0].flatten(start_dim=1).shape[1]
 
 fp_cfg = get_model_config(config, 'fp')
