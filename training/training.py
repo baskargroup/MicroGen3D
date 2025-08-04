@@ -77,16 +77,27 @@ wandb_logger = None  # Optional
 
 # === Train VAE ===
 vae_cfg = get_model_config(config, 'vae')
+input_shape = tuple(config.get('image_shape', [1, 64, 64, 64]))  # Ensure it's a tuple (C, H, W, D)
+print(f"Input shape for VAE: {input_shape}")    
+stride1_first_layer=vae_cfg.get('stride1_first_layer', True),
+print(f"Using stride1_first_layer={stride1_first_layer} for VAE")
 vae = VAE(
-    latent_dim_channels=vae_cfg['latent_dim_channels'],
+    in_shape=input_shape,
+    latent_dim=vae_cfg.get('latent_dim_channels', 4),
+    max_channels=vae_cfg.get('max_channels', 512),
+    stride1_first_layer=vae_cfg.get('stride1_first_layer', True),
     T_max=vae_cfg['max_epochs'],
     kld_loss_weight=vae_cfg['kld_loss_weight']
 )
-if os.path.isfile(vae_cfg['pretrained_path']):
-    state_dict = torch.load(vae_cfg['pretrained_path'], map_location=device)
+
+pretrained_path = vae_cfg.get('pretrained_path', '').strip()
+if pretrained_path and os.path.isfile(pretrained_path):
+    state_dict = torch.load(pretrained_path, map_location=device)
     vae.load_state_dict(state_dict)
-    print(f"Loaded pretrained VAE from {vae_cfg['pretrained_path']}")
+    print(f"Loaded pretrained VAE from {pretrained_path}")
+
 vae = vae.to(device)
+
 
 if vae_cfg['max_epochs'] >= 1:
     print('Training VAE...')

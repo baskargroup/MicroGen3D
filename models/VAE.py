@@ -55,25 +55,33 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, latent_dim=3, max_channels=512, stride1_first_layer=True):
         super().__init__()
+        self.convs = nn.ModuleList()
+        self.instnorms = nn.ModuleList()
+        self.resblocks = nn.ModuleList()
+
         channels = [latent_dim, max_channels, 256, 128, 64]
-        self.deconv_layers = nn.ModuleList()
         for i in range(len(channels) - 1):
             k, s, p, op = (1, 1, 0, 0) if i == 0 else (3, 2, 1, 1)
-            self.deconv_layers.append(nn.Sequential(
-                nn.ConvTranspose3d(channels[i], channels[i + 1], kernel_size=k, stride=s, padding=p, output_padding=op),
-                nn.InstanceNorm3d(channels[i + 1], affine=True),
-                ResBlock(channels[i + 1]),
-            ))
+            self.convs.append(nn.ConvTranspose3d(channels[i], channels[i + 1], kernel_size=k, stride=s, padding=p, output_padding=op))
+            self.instnorms.append(nn.InstanceNorm3d(channels[i + 1], affine=True))
+            self.resblocks.append(ResBlock(channels[i + 1]))
 
-        # Final layer (stride adjusted based on encoding)
-        self.final_conv = nn.ConvTranspose3d(64, 1, kernel_size=3, stride=2 if not stride1_first_layer else 1, 
-                                             padding=1, output_padding=1 if not stride1_first_layer else 0)
+        self.final_conv = nn.ConvTranspose3d(
+            64, 1,
+            kernel_size=3,
+            stride=2 if not stride1_first_layer else 1,
+            padding=1,
+            output_padding=1 if not stride1_first_layer else 0
+        )
         self.final_activation = nn.Sigmoid()
 
     def forward(self, z):
-        for layer in self.deconv_layers:
-            z = layer(z)
+        for conv, instnorm, resblock in zip(self.convs, self.instnorms, self.resblocks):
+            z = conv(z)
+            z = instnorm(z)
+            z = resblock(z)
         return self.final_activation(self.final_conv(z))
+
 
 
 class VAE(pl.LightningModule):
@@ -115,11 +123,11 @@ class VAE(pl.LightningModule):
         opt.zero_grad()
         self.manual_backward(total_loss)
         opt.step()
-        self.log_dict({"train_loss": total_loss, "train_recon": recon_loss, "train_kld": kld_loss})
+        self.log_dict({"train_loss": total_loss, "train_recon_loss": recon_loss, "train_kld_loss": kld_loss})
 
     def validation_step(self, batch, batch_idx):
         total_loss, recon_loss, kld_loss = self.step(batch, batch_idx)
-        self.log_dict({"val_loss": total_loss, "val_recon": recon_loss, "val_kld": kld_loss})
+        self.log_dict({"val_loss": total_loss, "val_recon_loss": recon_loss, "val_kld_loss": kld_loss})
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.parameters(), lr=5e-5)

@@ -37,6 +37,17 @@ def get_model_config(config, model_name):
             raise ValueError(f"'{model_name}.{key}' must be in [0.0, 1.0], got: {value}")
         return value
 
+    def get_bool(key, default=False):
+        value = model_cfg.get(key, default)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            if value.lower() in ['true', 'yes', '1']:
+                return True
+            elif value.lower() in ['false', 'no', '0']:
+                return False
+        raise ValueError(f"'{model_name}.{key}' must be a boolean, got: {value}")
+
     model_cfg = config.get(model_name, {})
 
     return {
@@ -48,4 +59,6 @@ def get_model_config(config, model_name):
         'n_feat': get_int('n_feat', 512, allow_zero=False),
         'timesteps': get_int('timesteps', 1000, allow_zero=False),
         'learning_rate': get_float('learning_rate', 1e-6),
+        'stride1_first_layer': get_bool('stride1_first_layer', False),
+        'max_channels': get_int('max_channels', 512, allow_zero=False),
     }
