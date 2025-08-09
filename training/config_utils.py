@@ -66,9 +66,13 @@ def get_model_config(config, model_name):
 
 def get_context_indices(config):
     attributes = config.get("attributes", [])
-    context_attributes = config.get("context_attributes") or attributes
+    ddpm_cfg = config.get("ddpm", {})
+    context_attributes = ddpm_cfg.get("context_attributes") or attributes
 
-    if not set(context_attributes).issubset(set(attributes)):
-        raise ValueError(f"context_attributes must be a subset of attributes. Got: {context_attributes}")
+    invalid = set(context_attributes) - set(attributes)
+    if invalid:
+        raise ValueError(
+            f"context_attributes must be a subset of attributes. Invalid: {invalid}"
+        )
 
     return [attributes.index(attr) for attr in context_attributes], context_attributes
