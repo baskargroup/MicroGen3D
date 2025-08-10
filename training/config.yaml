@@ -1,38 +1,45 @@
-# General settings experimental
-task: "_"  # auto-generated if left blank or "_"
-data_path: "../data/sample_train.h5"
-model_dir: "../models/weights/"
-batch_size: 32
-image_shape: [1, 64, 64, 64]
-attributes:
+# ================================
+# General settings
+# ================================
+task: "_"                  # Auto-generated if blank or "_"
+data_path: "../data/experimental/sample_train.h5"  # Path to training dataset
+model_dir: "../models/weights/"       # Directory to save model weights
+batch_size: 32              # Batch size for training
+image_shape: [1, 64, 64, 64]  # Shape of the 3D images [C, D, H, W]
+attributes:                 # Full list of attributes predicted by FP
   - ABS_f_D
   - CT_f_D_tort1
   - CT_f_A_tort1
 
+# ================================
 # VAE settings
+# ================================
 vae:
-  latent_dim_channels: 1
-  kld_loss_weight: 0.000001
-  max_epochs: 1
-  pretrained_path: "../models/weights/experimental/vae.pt"
-  stride1_first_layer: true  # 
-  max_channels: 512
+  latent_dim_channels: 1     # Latent space channel size
+  kld_loss_weight: 0.000001  # Weight of KL divergence loss
+  max_epochs: 1              # Number of training epochs (>=1 means train)
+  pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE
+  stride1_first_layer: true  # If true, use stride=1 in first conv layer
+  max_channels: 512          # Maximum number of channels in VAE
 
+# ================================
 # FP settings
+# ================================
 fp:
-  dropout: 0.1
-  max_epochs: 2
-  pretrained_path: "../models/weights/experimental/fp.pt"
+  dropout: 0.1               # Dropout probability (0 to 1)
+  max_epochs: 2              # Number of training epochs (>=1 means train)
+  pretrained_path: "../models/weights/experimental/fp.pt"  # Path to pretrained FP
 
+# ================================
 # DDPM settings
+# ================================
 ddpm:
-  timesteps: 1000
-  n_feat: 512
-  learning_rate: 0.000001
-  max_epochs: 1
-  pretrained_path: "../models/weights/experimental/ddpm.pt"
-  # context_attributes:
-  #   - ABS_f_D
-  #   - CT_f_D_tort1
-  #   - CT_f_A_tort1
-
+  timesteps: 1000            # Number of diffusion timesteps
+  n_feat: 512                # UNet feature channels (higher = more capacity)
+  learning_rate: 0.000001    # Learning rate for optimizer
+  max_epochs: 1              # Number of training epochs (>=1 means train)
+  pretrained_path: "../models/weights/experimental/ddpm.pt"  # Path to pretrained DDPM
+  context_attributes:        # Subset of attributes used as conditioning context
+    - ABS_f_D
+    - CT_f_D_tort1
+    - CT_f_A_tort1
