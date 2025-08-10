@@ -55,7 +55,7 @@ If `task` is blank or `"_"`, a timestamped task name is generated automatically.
 # General settings
 # ================================
 task: "_"                  # Auto-generated if blank or "_"
-data_path: "../data/sample_train.h5"  # Path to training dataset
+data_path: "../data/experimental/sample_train.h5"  # Path to training dataset
 model_dir: "../models/weights/"       # Directory to save model weights
 batch_size: 32              # Batch size for training
 image_shape: [1, 64, 64, 64]  # Shape of the 3D images [C, D, H, W]
@@ -70,8 +70,8 @@ attributes:                 # Full list of attributes predicted by FP
 vae:
   latent_dim_channels: 1     # Latent space channel size
   kld_loss_weight: 0.000001  # Weight of KL divergence loss
-  max_epochs: 1              # Number of training epochs (>=1 means train)
-  pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE
+  max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
+  pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE - Null path means train from scratch
   stride1_first_layer: true  # If true, use stride=1 in first conv layer
   max_channels: 512          # Maximum number of channels in VAE
 
@@ -80,8 +80,8 @@ vae:
 # ================================
 fp:
   dropout: 0.1               # Dropout probability (0 to 1)
-  max_epochs: 2              # Number of training epochs (>=1 means train)
-  pretrained_path: "../models/weights/experimental/fp.pt"  # Path to pretrained FP
+  max_epochs: 2              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
+  pretrained_path: "../models/weights/experimental/fp.pt"  # Path to pretrained FP - Null path means train from scratch
 
 # ================================
 # DDPM settings
@@ -90,8 +90,8 @@ ddpm:
   timesteps: 1000            # Number of diffusion timesteps
   n_feat: 512                # UNet feature channels (higher = more capacity)
   learning_rate: 0.000001    # Learning rate for optimizer
-  max_epochs: 1              # Number of training epochs (>=1 means train)
-  pretrained_path: "../models/weights/experimental/ddpm.pt"  # Path to pretrained DDPM
+  max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
+  pretrained_path: "../models/weights/experimental/ddpm.pt"  # Path to pretrained DDPM - Null path means train from scratch
   context_attributes:        # Subset of attributes used as conditioning context
     - ABS_f_D
     - CT_f_D_tort1
@@ -107,6 +107,21 @@ Only change the following fields for each pretrained weights and dataset.
 All other parameters can remain the same unless you want to tune them.
 
 ---
+
+**⚠️ Important — Required Parameters for Pretrained Weights**
+The following parameters **must match exactly** when using the provided pretrained weights.
+If you change any of these values, the pretrained models will not load or function properly.
+
+* `data_path`
+* `image_shape`
+* `attributes`
+* `vae.pretrained_path`
+* `fp.pretrained_path`
+* `ddpm.pretrained_path`
+* `ddpm.context_attributes`
+
+All other parameters (e.g., batch size, learning rate, max\_epochs) can be adjusted for fine-tuning if desired.
+
 
 **🔹 CH 2-Phase**
 
