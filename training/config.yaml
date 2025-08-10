@@ -17,8 +17,8 @@ attributes:                 # Full list of attributes predicted by FP
 vae:
   latent_dim_channels: 1     # Latent space channel size
   kld_loss_weight: 0.000001  # Weight of KL divergence loss
-  max_epochs: 1              # Number of training epochs (>=1 means train)
-  pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE
+  max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
+  pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE - Null path means train from scratch
   stride1_first_layer: true  # If true, use stride=1 in first conv layer
   max_channels: 512          # Maximum number of channels in VAE
 
@@ -27,8 +27,8 @@ vae:
 # ================================
 fp:
   dropout: 0.1               # Dropout probability (0 to 1)
-  max_epochs: 2              # Number of training epochs (>=1 means train)
-  pretrained_path: "../models/weights/experimental/fp.pt"  # Path to pretrained FP
+  max_epochs: 2              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
+  pretrained_path: "../models/weights/experimental/fp.pt"  # Path to pretrained FP - Null path means train from scratch
 
 # ================================
 # DDPM settings
@@ -37,8 +37,8 @@ ddpm:
   timesteps: 1000            # Number of diffusion timesteps
   n_feat: 512                # UNet feature channels (higher = more capacity)
   learning_rate: 0.000001    # Learning rate for optimizer
-  max_epochs: 1              # Number of training epochs (>=1 means train)
-  pretrained_path: "../models/weights/experimental/ddpm.pt"  # Path to pretrained DDPM
+  max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
+  pretrained_path: "../models/weights/experimental/ddpm.pt"  # Path to pretrained DDPM - Null path means train from scratch
   context_attributes:        # Subset of attributes used as conditioning context
     - ABS_f_D
     - CT_f_D_tort1
