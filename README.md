@@ -72,7 +72,7 @@ vae:
   kld_loss_weight: 0.000001  # Weight of KL divergence loss
   max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
   pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE - Null path means train from scratch
-  stride1_first_layer: true  # If true, use stride=1 in first conv layer
+  first_layer_downsample: true  # If true, use stride=1 in first conv layer
   max_channels: 512          # Maximum number of channels in VAE
 
 # ================================

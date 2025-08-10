@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 data/*h5
+data/*
 models/weights/*
 __pycache__/
 *.py[cod]
