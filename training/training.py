@@ -79,13 +79,13 @@ wandb_logger = None  # Optional
 vae_cfg = get_model_config(config, 'vae')
 input_shape = tuple(config.get('image_shape', [1, 64, 64, 64]))  # Ensure it's a tuple (C, H, W, D)
 print(f"Input shape for VAE: {input_shape}")    
-stride1_first_layer=vae_cfg.get('stride1_first_layer', True),
-print(f"Using stride1_first_layer={stride1_first_layer} for VAE")
+first_layer_downsample=vae_cfg.get('first_layer_downsample', True),
+print(f"Using first_layer_downsample={first_layer_downsample} for VAE")
 vae = VAE(
     in_shape=input_shape,
     latent_dim=vae_cfg.get('latent_dim_channels', 4),
     max_channels=vae_cfg.get('max_channels', 512),
-    stride1_first_layer=vae_cfg.get('stride1_first_layer', True),
+    first_layer_downsample=vae_cfg.get('first_layer_downsample', True),
     T_max=vae_cfg['max_epochs'],
     kld_loss_weight=vae_cfg['kld_loss_weight']
 )

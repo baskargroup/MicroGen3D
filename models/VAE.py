@@ -20,16 +20,16 @@ class ResBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, in_shape, latent_dim=3, max_channels=512, stride1_first_layer=True):
+    def __init__(self, in_shape, latent_dim=3, max_channels=512, first_layer_downsample=True):
         super().__init__()
         C, H, W, D = in_shape
         self.latent_dim = latent_dim
-        self.stride1_first_layer = stride1_first_layer
+        self.first_layer_downsample = first_layer_downsample
 
         layers = []
         in_ch = C
         for out_ch, stride in zip([64, 128, 256, max_channels], 
-                                  [1 if stride1_first_layer else 2, 2, 2, 2]):
+                                  [1 if first_layer_downsample else 2, 2, 2, 2]):
             layers += [
                 nn.Conv3d(in_ch, out_ch, kernel_size=3, stride=stride, padding=1),
                 nn.InstanceNorm3d(out_ch, affine=True),
@@ -53,7 +53,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, latent_dim=3, max_channels=512, stride1_first_layer=True):
+    def __init__(self, latent_dim=3, max_channels=512, first_layer_downsample=True):
         super().__init__()
         self.convs = nn.ModuleList()
         self.instnorms = nn.ModuleList()
@@ -69,9 +69,9 @@ class Decoder(nn.Module):
         self.final_conv = nn.ConvTranspose3d(
             64, 1,
             kernel_size=3,
-            stride=2 if not stride1_first_layer else 1,
+            stride=2 if not first_layer_downsample else 1,
             padding=1,
-            output_padding=1 if not stride1_first_layer else 0
+            output_padding=1 if not first_layer_downsample else 0
         )
         self.final_activation = nn.Sigmoid()
 
@@ -89,13 +89,13 @@ class VAE(pl.LightningModule):
                  in_shape=(1, 64, 64, 64), 
                  latent_dim=3, 
                  max_channels=512, 
-                 stride1_first_layer=True,
+                 first_layer_downsample=True,
                  T_max=100, 
                  kld_loss_weight=1e-6):
         super().__init__()
         self.save_hyperparameters()
-        self.encoder = Encoder(in_shape, latent_dim, max_channels, stride1_first_layer)
-        self.decoder = Decoder(latent_dim, max_channels, stride1_first_layer)
+        self.encoder = Encoder(in_shape, latent_dim, max_channels, first_layer_downsample)
+        self.decoder = Decoder(latent_dim, max_channels, first_layer_downsample)
         self.kld_loss_weight = kld_loss_weight
         self.T_max = T_max
         self.automatic_optimization = False

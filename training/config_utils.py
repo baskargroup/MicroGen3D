@@ -59,7 +59,7 @@ def get_model_config(config, model_name):
         'n_feat': get_int('n_feat', 512, allow_zero=False),
         'timesteps': get_int('timesteps', 1000, allow_zero=False),
         'learning_rate': get_float('learning_rate', 1e-6),
-        'stride1_first_layer': get_bool('stride1_first_layer', False),
+        'first_layer_downsample': get_bool('first_layer_downsample', False),
         'max_channels': get_int('max_channels', 512, allow_zero=False),
     }
 
