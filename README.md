@@ -62,12 +62,12 @@ tar -xzvf data/experimental.tar.gz -C data/
 
 ## ⚙️ Configuration
 
-All training and model settings are stored in `config.yaml`.
+All training and model settings are stored in `config_train.yaml`.
 If `task` is blank or `"_"`, a timestamped task name is generated automatically.
 
 ---
 
-### 📄 Full Example `config.yaml`
+### 📄 Full Example `config_train.yaml`
 
 ```yaml
 # ================================
@@ -122,8 +122,9 @@ ddpm:
 
 ## 🧪 Pretrained Config Variants
 
-Only change the following fields for each pretrained weights and dataset.
-All other parameters can remain the same unless you want to tune them.
+To use other pretrained weights or datasets, you can copy the example configurations below into your `config_train.yaml` file. But before doing so, ensure you have downloaded the corresponding pretrained weights and dataset files as described earlier.
+
+Only change the following fields for each pretrained weights and dataset. All other parameters can remain the same unless you want to tune them.
 
 ---
 

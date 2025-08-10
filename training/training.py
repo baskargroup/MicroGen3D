@@ -13,13 +13,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from models.VAE import VAE
 from models.FP import SimpleFC
 from models.DDPM import LatentDDPM as DDPM
-from dataloader import ImageDataModule
 from models.transform import vae_encoder_transform, fp_transform
+from utils.dataloader import ImageDataModule
 
-from config_utils import *
+from utils.config_utils import *
 
 # === Load Config ===
-with open("config.yaml", "r") as f:
+with open("config_train.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 # Auto-generate task name

@@ -1,0 +1,44 @@
+# ===== Pretrained-loading (canonical) =====
+# These MUST match the specific pretrained set you downloaded.
+
+data_path: "../data/experimental/val.h5"   # REQUIRED (must match)
+image_shape: [1, 64, 64, 64]                       # REQUIRED (must match)
+attributes:                                        # REQUIRED (must match, order matters)
+  - ABS_f_D
+  - CT_f_D_tort1
+  - CT_f_A_tort1
+
+vae:
+  latent_dim_channels: 1                  # int | default=1 | Latent space channel size
+  kld_loss_weight: 0.000001               # float | default=1e-6 | Weight of KL divergence loss term
+  max_epochs: 0                           # int | default=0 | Number of epochs to train (>=1 = train, 0 = skip training)
+  pretrained_path: "../models/weights/experimental/vae.pt"  # str | default="" | Path to pretrained VAE weights (empty or wrong or null path = train from scratch)
+  first_layer_downsample: true            # bool | default=False | If true, first conv layer downsamples input (stride=2), else uses stride=1
+  max_channels: 512                       # int | default=512 | Max number of feature channels in VAE encoder/decoder
+               # int | default=512 | Max number of feature channels in VAE encoder/decoder
+
+# ================================
+# FP settings
+# ================================
+fp:                           # float in [0,1] | default=0.1 | Dropout probability for fully connected layers
+  max_epochs: 0                            # int | default=0 | Number of epochs to train (>=1 = train, 0 = skip training)
+  pretrained_path: "../models/weights/experimental/fp.pt"   # str | default="" | Path to pretrained FP weights (empty or wrong or null path = train from scratch)
+
+# ================================
+# DDPM settings
+# ================================
+ddpm:
+  timesteps: 1000                          # int | default=1000 | Number of diffusion timesteps
+  n_feat: 512                              # int | default=512 | UNet base feature channels (higher = more capacity)
+  max_epochs: 0                            # int | default=0 | Number of epochs to train (>=1 = train, 0 = skip training)
+  pretrained_path: "../models/weights/experimental/ddpm.pt" # str | default="" | Path to pretrained DDPM weights (empty or wrong or null path = train from scratch)
+  context_attributes:                      # list[str] | default=<attributes> | Subset of `attributes` used as DDPM conditioning
+    - ABS_f_D
+    - CT_f_D_tort1
+    # - CT_f_A_tort1
+
+# Loader behavior (helps generalize between .pt vs Lightning .ckpt if you reuse this file elsewhere)
+runtime:
+  weights_format: "pt"        # "pt" for raw state_dict, "lightning" if .ckpt with {"state_dict": ...}
+  map_location: "auto"        # "auto" | "cuda" | "cpu"
+  strict_load: false          # false = tolerate minor key mismatches; set true if you want strict equality
