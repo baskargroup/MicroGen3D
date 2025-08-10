@@ -29,15 +29,34 @@ huggingface-cli login
 
 ```python
 from huggingface_hub import hf_hub_download
+import os
 
 # Download sample dataset
-hf_hub_download(repo_id="BGLab/microgen3D", filename="sample_data.h5", repo_type="dataset", local_dir="data")
+hf_hub_download(
+    repo_id="BGLab/microgen3D",
+    filename="data/experimental.tar.gz",   # correct remote path
+    repo_type="dataset",
+    local_dir=""
+)
 
 # Download experimental pretrained weights
-hf_hub_download(repo_id="BGLab/microgen3D", filename="vae.pt", local_dir="models/weights/experimental")
-hf_hub_download(repo_id="BGLab/microgen3D", filename="fp.pt", local_dir="models/weights/experimental")
-hf_hub_download(repo_id="BGLab/microgen3D", filename="ddpm.pt", local_dir="models/weights/experimental")
+
+for fname in ["weights/experimental/vae.pt",
+              "weights/experimental/fp.pt",
+              "weights/experimental/ddpm.pt"]:
+    hf_hub_download(
+        repo_id="BGLab/microgen3D",
+        filename=fname,                # correct remote path
+        repo_type="dataset",
+        local_dir=""
+    )
+
 ```
+
+### 📂 Extract Dataset
+```bash 
+tar -xzvf data/experimental.tar.gz -C data/ 
+``` 
 
 ---
 
@@ -54,12 +73,12 @@ If `task` is blank or `"_"`, a timestamped task name is generated automatically.
 # ================================
 # General settings
 # ================================
-task: "_"                  # Auto-generated if blank or "_"
-data_path: "../data/experimental/sample_train.h5"  # Path to training dataset
-model_dir: "../models/weights/"       # Directory to save model weights
-batch_size: 32              # Batch size for training
-image_shape: [1, 64, 64, 64]  # Shape of the 3D images [C, D, H, W]
-attributes:                 # Full list of attributes predicted by FP
+task: "_"                                # str | default="_" | Task name; auto-generated if blank or "_"
+data_path: "../data/experimental/sample_train.h5"  # str | REQUIRED | Path or glob pattern to training dataset (e.g., "../data/.../part_*.h5")
+model_dir: "../models/weights/"          # str | default="../models/weights/" | Directory where model weights will be saved
+batch_size: 32                           # int | default=32 | Number of samples per batch during training
+image_shape: [1, 64, 64, 64]              # list[int] | default=[1, 64, 64, 64] | Shape of 3D input [C, D, H, W]
+attributes:                               # list[str] | REQUIRED | Full list of attributes predicted by FP
   - ABS_f_D
   - CT_f_D_tort1
   - CT_f_A_tort1
@@ -68,31 +87,31 @@ attributes:                 # Full list of attributes predicted by FP
 # VAE settings
 # ================================
 vae:
-  latent_dim_channels: 1     # Latent space channel size
-  kld_loss_weight: 0.000001  # Weight of KL divergence loss
-  max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
-  pretrained_path: "../models/weights/experimental/vae.pt"  # Path to pretrained VAE - Null path means train from scratch
-  first_layer_downsample: true  # If true, use stride=1 in first conv layer
-  max_channels: 512          # Maximum number of channels in VAE
+  latent_dim_channels: 1                  # int | default=1 | Latent space channel size
+  kld_loss_weight: 0.000001               # float | default=1e-6 | Weight of KL divergence loss term
+  max_epochs: 1                           # int | default=0 | Number of epochs to train (>=1 = train, 0 = skip training)
+  pretrained_path: "../weights/experimental/vae.pt"  # str | default="" | Path to pretrained VAE weights (empty or wrong or null path = train from scratch)
+  first_layer_downsample: true            # bool | default=False | If true, first conv layer downsamples input (stride=2), else uses stride=1
+  max_channels: 512                       # int | default=512 | Max number of feature channels in VAE encoder/decoder
 
 # ================================
 # FP settings
 # ================================
 fp:
-  dropout: 0.1               # Dropout probability (0 to 1)
-  max_epochs: 2              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
-  pretrained_path: "../models/weights/experimental/fp.pt"  # Path to pretrained FP - Null path means train from scratch
+  dropout: 0.1                             # float in [0,1] | default=0.1 | Dropout probability for fully connected layers
+  max_epochs: 2                            # int | default=0 | Number of epochs to train (>=1 = train, 0 = skip training)
+  pretrained_path: "../weights/experimental/fp.pt"   # str | default="" | Path to pretrained FP weights (empty or wrong or null path = train from scratch)
 
 # ================================
 # DDPM settings
 # ================================
 ddpm:
-  timesteps: 1000            # Number of diffusion timesteps
-  n_feat: 512                # UNet feature channels (higher = more capacity)
-  learning_rate: 0.000001    # Learning rate for optimizer
-  max_epochs: 1              # Number of training epochs (>=1 means train, =0 means just use pretrained weights)
-  pretrained_path: "../models/weights/experimental/ddpm.pt"  # Path to pretrained DDPM - Null path means train from scratch
-  context_attributes:        # Subset of attributes used as conditioning context
+  timesteps: 1000                          # int | default=1000 | Number of diffusion timesteps
+  n_feat: 512                              # int | default=512 | UNet base feature channels (higher = more capacity)
+  learning_rate: 0.000001                  # float | default=1e-6 | Learning rate for optimizer
+  max_epochs: 1                            # int | default=0 | Number of epochs to train (>=1 = train, 0 = skip training)
+  pretrained_path: "../weights/experimental/ddpm.pt" # str | default="" | Path to pretrained DDPM weights (empty or wrong or null path = train from scratch)
+  context_attributes:                      # list[str] | default=<attributes> | Subset of `attributes` used as DDPM conditioning
     - ABS_f_D
     - CT_f_D_tort1
     - CT_f_A_tort1
@@ -126,7 +145,7 @@ All other parameters (e.g., batch size, learning rate, max\_epochs) can be adjus
 **🔹 CH 2-Phase**
 
 ```yaml
-data_path: "../data/sample_CH_two_phase/train/part_*.h5"
+data_path: "../data/sample_CH_two_phase/train/part_*.h5" # wildcard to use all parts. If you want to use only one part, change it to "../data/sample_CH_two_phase/train/part_1.h5" etc.
 image_shape: [1, 128, 128, 64]
 attributes:
   - norm_STAT_e
@@ -150,7 +169,7 @@ ddpm.context_attributes:
 **🔹 CH 3-Phase**
 
 ```yaml
-data_path: "../data/sample_CH_three_phase/train/part_*.h5"
+data_path: "../data/sample_CH_three_phase/train/part_*.h5" # wildcard to use all parts. If you want to use only one part, change it to "../data/sample_CH_three_phase/train/part_1.h5" etc.
 image_shape: [1, 128, 128, 64]
 attributes:
   - vol_frac_D
@@ -175,7 +194,7 @@ ddpm.context_attributes:
 **🔹 Experimental**
 
 ```yaml
-data_path: "../data/sample_train.h5"
+data_path: "../data/experimental/train/train.h5"  # Path to the experimental dataset
 image_shape: [1, 64, 64, 64]
 attributes:
   - ABS_f_D
