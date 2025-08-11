@@ -157,6 +157,7 @@ attributes:
   - CT_f_D_tort1
   - CT_f_A_tort1
 vae.pretrained_path: "../models/weights/CH_2phase/vae.pt"
+vae.latent_dim_channels: 4
 fp.pretrained_path:  "../models/weights/CH_2phase/fp.pt"
 ddpm.pretrained_path: "../models/weights/CH_2phase/ddpm.pt"
 ddpm.context_attributes:
@@ -181,6 +182,7 @@ attributes:
   - chi
   - log_time
 vae.pretrained_path: "../models/weights/CH_3phase/vae.pt"
+vae.latent_dim_channels: 4
 fp.pretrained_path:  "../models/weights/CH_3phase/fp.pt"
 ddpm.pretrained_path: "../models/weights/CH_3phase/ddpm.pt"
 ddpm.context_attributes:
@@ -202,6 +204,7 @@ attributes:
   - CT_f_D_tort1
   - CT_f_A_tort1
 vae.pretrained_path: "../models/weights/experimental/vae.pt"
+vae.latent_dim_channels: 1
 fp.pretrained_path:  "../models/weights/experimental/fp.pt"
 ddpm.pretrained_path: "../models/weights/experimental/ddpm.pt"
 ddpm.context_attributes:
