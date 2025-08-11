@@ -1,61 +1,77 @@
-# ===== Canonical pretrained compatibility (must match your weights) =====
-data_path: "../data/experimental/sample_train.h5"   # REQUIRED for mode=dataset; else may be null
-image_shape: [1, 64, 64, 64]
-attributes:
+# ================================
+# Canonical pretrained compatibility (must match your weights)
+# ================================
+data_path: "../data/experimental/sample_train.h5"   # str | REQUIRED for inference.mode=dataset | Path or glob to data (e.g., "../.../part_*.h5"); set null for other modes
+batch_size: 4                                      # int | default=20 | Batch size used during generation and dataset loading
+image_shape: [1, 64, 64, 64]                        # list[int] | default=[1,64,64,64] | Input volume shape [C, D, H, W]
+attributes:                                         # list[str] | REQUIRED | Full FP output order; order must match the weights
   - ABS_f_D
   - CT_f_D_tort1
   - CT_f_A_tort1
 
+# ================================
+# VAE settings (used only for loading + decoding)
+# ================================
 vae:
-  latent_dim_channels: 1
-  kld_loss_weight: 0.000001
-  max_epochs: 0
-  pretrained_path: "../models/weights/experimental/vae.pt"
-  first_layer_downsample: true
-  max_channels: 512
+  latent_dim_channels: 1                            # int | default=1 | Latent channel count used during training
+  kld_loss_weight: 0.000001                         # float | default=1e-6 | Not used at inference; kept for compatibility
+  max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
+  pretrained_path: "../models/weights/experimental/vae.pt"  # str | default="" | Path to VAE weights; must exist for inference
+  first_layer_downsample: true                      # bool | default=False | Must match training config; affects encoder stride
+  max_channels: 512                                 # int | default=512 | Architecture width; must match training
 
+# ================================
+# FP (feature predictor) settings
+# ================================
 fp:
-  max_epochs: 0
-  pretrained_path: "../models/weights/experimental/fp.pt"
+  max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
+  pretrained_path: "../models/weights/experimental/fp.pt"   # str | default="" | Path to FP weights; must exist for inference
 
+# ================================
+# DDPM (generator) settings
+# ================================
 ddpm:
-  timesteps: 1000
-  n_feat: 512
-  max_epochs: 0
-  pretrained_path: "../models/weights/experimental/ddpm.pt"
-  context_attributes:        # the conditioning order used for DDPM
+  timesteps: 1000                                   # int | default=1000 | Diffusion steps; must match training for best results
+  n_feat: 512                                       # int | default=512 | UNet base width; must match training
+  max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
+  pretrained_path: "../models/weights/experimental/ddpm.pt" # str | default="" | Path to DDPM weights; must exist for inference
+  context_attributes:                               # list[str] | default=<attributes> | Subset (in order) used as DDPM conditioning
     - ABS_f_D
     - CT_f_D_tort1
     - CT_f_A_tort1
 
-# ===== Inference controls =====
+# ================================
+# Inference controls (choose how to provide context)
+# ================================
 inference:
-  mode: "dataset"           # one of: "constant" | "random" | "dataset"
-  total_samples: 20         # total number of samples to generate
-  batch_size: 10           # batch size used during generation
+  mode: "constant"                                  # str | default="constant" | One of: "constant" | "random" | "dataset"
+  total_samples: 100                                # int | default=100 | Total number of generated samples
 
-  # mode = constant
-  constant_context:          # one row; order can be full attributes OR context_attributes
+  # --- mode="constant": broadcast a single context row to the whole batch ---
+  constant_context:                                 # list[float] or list[int] | default=[] | Either full attributes or just context_attributes order
     - 0.5
     - 0.2
     - 0.2
 
-  # mode = random
+  # --- mode="random": sample contexts uniformly within per-attribute ranges ---
   random:
-    ranges:                  # define ranges ONLY for context_attributes
+    ranges:                                         # dict[str -> [float lo, float hi]] | REQUIRED for mode="random"
       ABS_f_D: [0.4, 0.6]
       CT_f_D_tort1: [0.15, 0.35]
       CT_f_A_tort1: [0.15, 0.35]
 
-  # mode = dataset
-  dataset_loader: "train"      # "train" or "val". use train if you use validation dataset file in data_path
+  # --- mode="dataset": derive context from FP( VAE(latent(x)) ) using a dataloader ---
+  dataset_loader: "val"                             # str | default="val" | One of: "train" | "val"; requires data_path to be valid
 
-# ===== Output controls =====
+# ================================
+# Output controls
+# ================================
 output:
-  output_dir: "./output"     # base directory
-  write_vti: true
-  write_csv: true
-  threshold: 0.5
-  save_every_batch: true     # write CSV incrementally each batch (large runs safety)
-  csv_inputs: "inputs_context.csv"
-  csv_outputs: "outputs_predicted.csv"
+  output_dir: "./output"                            # str | default="./output" | Base directory for all outputs
+  write_vti: true                                   # bool | default=true | Write .vti volumes (generated & optionally original/recon)
+  write_csv: true                                   # bool | default=true | Write CSVs for input contexts and predicted features
+  threshold: 0.5                                    # float | default=0.5 | Threshold for *_threshold volumes
+  save_every_batch: true                            # bool | default=true | Flush CSVs after each batch (safer for long runs)
+  csv_inputs: "inputs_context.csv"                  # str | default="inputs_context.csv" | CSV filename for the used contexts (context_attributes columns)
+  csv_outputs: "outputs_predicted.csv"              # str | default="outputs_predicted.csv" | CSV filename for FP predictions (full attributes columns)
+

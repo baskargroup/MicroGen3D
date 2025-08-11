@@ -7,6 +7,8 @@ __pycache__/
 *$py.class
 lightning_logs/
 output_dir/
+output/
+tmp*
 
 # C extensions
 *.so
