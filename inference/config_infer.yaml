@@ -16,7 +16,7 @@ vae:
   latent_dim_channels: 1                            # int | default=1 | Latent channel count used during training
   kld_loss_weight: 0.000001                         # float | default=1e-6 | Not used at inference; kept for compatibility
   max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
-  pretrained_path: "../models/weights/experimental/vae.pt"  # str | default="" | Path to VAE weights; must exist for inference
+  pretrained_path: "../weights/experimental/vae.pt"  # str | default="" | Path to VAE weights; must exist for inference
   first_layer_downsample: true                      # bool | default=False | Must match training config; affects encoder stride
   max_channels: 512                                 # int | default=512 | Architecture width; must match training
 
@@ -25,7 +25,7 @@ vae:
 # ================================
 fp:
   max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
-  pretrained_path: "../models/weights/experimental/fp.pt"   # str | default="" | Path to FP weights; must exist for inference
+  pretrained_path: "../weights/experimental/fp.pt"   # str | default="" | Path to FP weights; must exist for inference
 
 # ================================
 # DDPM (generator) settings
@@ -34,7 +34,7 @@ ddpm:
   timesteps: 1000                                   # int | default=1000 | Diffusion steps; must match training for best results
   n_feat: 512                                       # int | default=512 | UNet base width; must match training
   max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
-  pretrained_path: "../models/weights/experimental/ddpm.pt" # str | default="" | Path to DDPM weights; must exist for inference
+  pretrained_path: "../weights/experimental/ddpm.pt" # str | default="" | Path to DDPM weights; must exist for inference
   context_attributes:                               # list[str] | default=<attributes> | Subset (in order) used as DDPM conditioning
     - ABS_f_D
     - CT_f_D_tort1
@@ -74,4 +74,3 @@ output:
   save_every_batch: true                            # bool | default=true | Flush CSVs after each batch (safer for long runs)
   csv_inputs: "inputs_context.csv"                  # str | default="inputs_context.csv" | CSV filename for the used contexts (context_attributes columns)
   csv_outputs: "outputs_predicted.csv"              # str | default="outputs_predicted.csv" | CSV filename for FP predictions (full attributes columns)
-
