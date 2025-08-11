@@ -1,7 +1,6 @@
 # MicroGen3D
 
-MicroGen3D is a conditional latent diffusion model framework for generating high-resolution 3D multiphase microstructures with user-defined attributes such as volume fraction and tortuosity.  
-Designed to accelerate materials discovery, it can synthesize microstructures within a few seconds and predict associated manufacturing parameters.
+MicroGen3D is a conditional latent diffusion model framework for generating high-resolution, 3D multiphase microstructures based on user-defined attributes such as volume fraction and tortuosity. Designed to accelerate materials discovery, it can synthesize 3D microstructures within seconds and predict their corresponding manufacturing parameters.
 
 ---
 
@@ -22,10 +21,11 @@ source venv/bin/activate        # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # 4. (Optional) Log in to Hugging Face if downloading datasets/weights
-huggingface-cli login
+huggingface-cli login # enter your token when prompted
 ````
 
 ### 📥 Download Dataset & Pretrained Weights
+Copy and run this code in a Python script or notebook to download the sample dataset and pretrained weights into the current directory with the correct folder structure. For more details about the dataset and pretrained weights, visit the Hugging Face page.
 
 ```python
 from huggingface_hub import hf_hub_download
@@ -59,11 +59,45 @@ tar -xzvf data/experimental.tar.gz -C data/
 ``` 
 
 ---
+## 🏋️ Training
 
-## ⚙️ Configuration
+From the repo root:
 
-All training and model settings are stored in `config_train.yaml`.
-If `task` is blank or `"_"`, a timestamped task name is generated automatically.
+```bash
+cd training
+python training.py
+```
+
+All training settings are stored in `config_train.yaml`.
+
+### Key Points
+
+- **Data Path**  
+  - The `data_path` field supports **wildcard patterns**.  
+  - You can specify:
+    - A single `.h5` file.  
+    - Multiple `.h5` files using wildcards (e.g., `../data/*.h5`).  
+
+- **Training Options**  
+  - Train from scratch or use pretrained weights for the **VAE**, **FP**, and **DDPM** models.  
+  - Training proceeds **sequentially**:
+    1. Train the **VAE**.  
+    2. Use the trained VAE to train the **FP**.  
+    3. Use both the trained VAE and FP to train the **DDPM**.  
+
+- **Pretrained Weights & Epoch Settings**  
+  - If pretrained weights are provided for a model **and** `epoch = 0`, training for that model is **skipped**.  
+  - If `epoch` is **non-zero**, the model will be trained for the specified number of epochs, regardless of whether pretrained weights are provided.  
+
+- **Training Strategy Summary**  
+  - When training begins, a **Training Strategy Summary** is displayed.  
+  - This summary shows, for each model (VAE, FP, DDPM):  
+    - Whether pretrained weights were loaded.  
+    - The number of epochs scheduled for training.  
+
+- **Parameter Details**  
+  - A full example config with detailed parameter descriptions is provided below.
+
 
 ---
 
@@ -75,7 +109,7 @@ If `task` is blank or `"_"`, a timestamped task name is generated automatically.
 # ================================
 task: "_"                                # str | default="_" | Task name; auto-generated if blank or "_"
 data_path: "../data/experimental/sample_train.h5"  # str | REQUIRED | Path or glob pattern to training dataset (e.g., "../data/.../part_*.h5")
-model_dir: "../models/weights/"          # str | default="../models/weights/" | Directory where model weights will be saved
+model_dir: "../models/weights/"          # str | default="../models/weights/" | Directory where model weights will be saved after training
 batch_size: 32                           # int | default=32 | Number of samples per batch during training
 image_shape: [1, 64, 64, 64]              # list[int] | default=[1, 64, 64, 64] | Shape of 3D input [C, D, H, W]
 attributes:                               # list[str] | REQUIRED | Full list of attributes predicted by FP
@@ -122,9 +156,9 @@ ddpm:
 
 ## 🧪 Pretrained Config Variants
 
-To use other pretrained weights or datasets, you can copy the example configurations below into your `config_train.yaml` file. But before doing so, ensure you have downloaded the corresponding pretrained weights and dataset files as described earlier.
+To use other pretrained weights or datasets, copy the example configurations below into your `config_train.yaml` file. Before doing so, ensure that you have downloaded the corresponding pretrained weights and dataset files as described earlier.
 
-Only change the following fields for each pretrained weights and dataset. All other parameters can remain the same unless you want to tune them.
+Only update the fields related to the pretrained weights and dataset paths; all other parameters can remain unchanged unless you wish to fine-tune them.
 
 ---
 
@@ -136,6 +170,7 @@ If you change any of these values, the pretrained models will not load or functi
 * `image_shape`
 * `attributes`
 * `vae.pretrained_path`
+* `vae.latent_dim_channels`
 * `fp.pretrained_path`
 * `ddpm.pretrained_path`
 * `ddpm.context_attributes`
@@ -213,21 +248,6 @@ ddpm.context_attributes:
   - CT_f_A_tort1
 ```
 
----
-
-## 🏋️ Training
-
-From the repo root:
-
-```bash
-cd training
-python training.py
-```
-
-When training starts, you will see a **Training Strategy Summary** showing for each model (VAE, FP, DDPM) whether pretrained weights were loaded and how many epochs it will train.
-
----
-
 ## 🧠 Inference
 
 From the repo root:
@@ -236,23 +256,43 @@ From the repo root:
 cd inference
 python inference.py
 ```
+## Inference
 
 This section describes how to run inference using the pretrained weights.
-⚠️ Important: For each pretrained model (CH 2-Phase, CH 3-Phase, Experimental), you must use the corresponding parameters in the config file exactly as listed below. Changing attributes, image shape, or vae.latent_dim_channels will result in incorrect outputs or loading errors.
 
-Output includes:
-- generated_raw/*vti – Continuous-valued voxel grid. Vti files can be visualized in Paraview or other similar tools.
-- generated_threshold/*vti – Binary mask after thresholding. Vti files can be visualized in Paraview or other similar tools.
-- csv inputs – CSV file with the input attributes used for generation.
-- csv outputs – CSV file with the generated attributes.
+⚠️ **Important:**  
+For each pretrained model (**CH 2-Phase**, **CH 3-Phase**, **Experimental**), you must use the **exact** corresponding parameters in the config file as listed in the examples below.  
+Changing `attributes`, `image_shape`, or `vae.latent_dim_channels` will result in **incorrect outputs** or **loading errors**.
 
-You can either:
+---
 
-1. **Use Validation Data** – The script will reconstruct and generate based on existing dataset samples.
-2. **Use Custom Context** – Provide manual context vectors; either:
+### Output Files
 
-   * A single context vector to generate multiple outputs with the same conditions.
-   * A matrix of context vectors to generate varied outputs.
+Running inference generates the following outputs:
+
+- **`generated_raw/*.vti`** – Continuous-valued voxel grid.  
+  *These `.vti` files can be visualized in ParaView or other similar tools.*
+
+- **`generated_threshold/*.vti`** – Binary mask after thresholding.  
+  *Also viewable in ParaView or other similar tools.*
+
+- **CSV inputs** – File containing the input attributes used for generation.
+
+- **CSV outputs** – File containing the generated attributes.
+
+---
+
+### Inference Modes
+
+You can run inference in two ways:
+
+1. **Use Validation Data**  
+   - The script reconstructs and generates outputs based on existing dataset samples.
+
+2. **Use Custom Context**  
+   - Provide manual context vectors, either:
+     - **Single context vector** – Generate multiple outputs under the same conditions.  
+     - **Matrix of context vectors** – Generate varied outputs for different conditions.
 
 ---
 
