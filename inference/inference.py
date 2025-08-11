@@ -17,10 +17,8 @@ from utils.config_utils import get_model_config, get_context_indices
 from utils.dataloader import ImageDataModule
 from models.transform import vae_encoder_transform, fp_transform
 
-from training.config_utils import *
-
 # === Load Config ===
-with open("params.yaml", "r") as f:
+with open("config_infer.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 # Auto-generate task name
