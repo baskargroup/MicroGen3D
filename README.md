@@ -228,6 +228,197 @@ When training starts, you will see a **Training Strategy Summary** showing for e
 
 ---
 
+## 🧠 Inference
+
+From the repo root:
+
+```bash
+cd inference
+python inference.py
+```
+
+This section describes how to run inference using the pretrained weights.
+⚠️ Important: For each pretrained model (CH 2-Phase, CH 3-Phase, Experimental), you must use the corresponding parameters in the config file exactly as listed below. Changing attributes, image shape, or vae.latent_dim_channels will result in incorrect outputs or loading errors.
+
+Output includes:
+- generated_raw/*vti – Continuous-valued voxel grid. Vti files can be visualized in Paraview or other similar tools.
+- generated_threshold/*vti – Binary mask after thresholding. Vti files can be visualized in Paraview or other similar tools.
+- csv inputs – CSV file with the input attributes used for generation.
+- csv outputs – CSV file with the generated attributes.
+
+You can either:
+
+1. **Use Validation Data** – The script will reconstruct and generate based on existing dataset samples.
+2. **Use Custom Context** – Provide manual context vectors; either:
+
+   * A single context vector to generate multiple outputs with the same conditions.
+   * A matrix of context vectors to generate varied outputs.
+
+---
+
+### 📄 Example Configs
+#### 📄 Full Example
+```yaml
+# ================================
+# Canonical pretrained compatibility (must match your weights)
+# ================================
+data_path: "../../../total_dataset_for_hugging_face/microgen3D/tmp_data/CH_three_phase/val/part_*.h5"   # str | REQUIRED for inference.mode=dataset | Path or glob to data (e.g., "../.../part_*.h5"); set null for other modes
+batch_size: 2                                      # int | default=20 | Batch size used during generation and dataset loading
+image_shape: [1, 128, 128, 64]                        # list[int] | default=[1,64,64,64] | Input volume shape [C, D, H, W]
+attributes:                                         # list[str] | REQUIRED | Full FP output order; order must match the weights
+  - vol_frac_D
+  - vol_frac_M
+  - tortuosity_A
+  - tortuosity_D
+  - phi
+  - chi
+  - log_time
+
+# ================================
+# VAE settings (used only for loading + decoding)
+# ================================
+vae:
+  latent_dim_channels: 4                            # int | default=1 | Latent channel count used during training
+  kld_loss_weight: 0.000001                         # float | default=1e-6 | Not used at inference; kept for compatibility
+  max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
+  pretrained_path: "../models/weights/CH_3phase/vae.pt"  # str | default="" | Path to VAE weights; must exist for inference
+  first_layer_downsample: false                      # bool | default=False | Must match training config; affects encoder stride
+  max_channels: 512                                 # int | default=512 | Architecture width; must match training
+
+# ================================
+# FP (feature predictor) settings
+# ================================
+fp:
+  max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
+  pretrained_path: "../models/weights/CH_3phase/fp.pt"   # str | default="" | Path to FP weights; must exist for inference
+
+# ================================
+# DDPM (generator) settings
+# ================================
+ddpm:
+  timesteps: 1000                                   # int | default=1000 | Diffusion steps; must match training for best results
+  n_feat: 512                                       # int | default=512 | UNet base width; must match training
+  max_epochs: 0                                     # int | default=0 | Leave at 0 for inference (no training)
+  pretrained_path: "../models/weights/CH_3phase/ddpm.pt" # str | default="" | Path to DDPM weights; must exist for inference
+  context_attributes:                               # list[str] | default=<attributes> | Subset (in order) used as DDPM conditioning
+    - vol_frac_D
+    - vol_frac_M
+    - tortuosity_A
+    - tortuosity_D
+
+# ================================
+# Inference controls (choose how to provide context)
+# ================================
+inference:
+  mode: "dataset"                                  # str | default="constant" | One of: "constant" | "random" | "dataset"
+  total_samples: 4                                # int | default=100 | Total number of generated samples
+
+  # --- mode="constant": broadcast a single context row to the whole batch ---
+  constant_context:                                 # list[float] or list[int] | default=[] | Either full attributes or just context_attributes order
+    - 0.5
+    - 0.2
+    - 0.2
+
+  # --- mode="random": sample contexts uniformly within per-attribute ranges ---
+  random:
+    ranges:                                         # dict[str -> [float lo, float hi]] | REQUIRED for mode="random"
+      ABS_f_D: [0.0, 0.96]
+      CT_f_D_tort1: [0.05, 0.95]
+      CT_f_A_tort1: [0.05, 0.95]
+
+  # --- mode="dataset": derive context from FP( VAE(latent(x)) ) using a dataloader ---
+  dataset_loader: "val"                             # str | default="val" | One of: "train" | "val"; requires data_path to be valid
+
+# ================================
+# Output controls
+# ================================
+output:
+  output_dir: "./output"                            # str | default="./output" | Base directory for all outputs
+  write_vti: true                                   # bool | default=true | Write .vti volumes (generated & optionally original/recon)
+  write_csv: true                                   # bool | default=true | Write CSVs for input contexts and predicted features
+  threshold: 0.5                                    # float | default=0.5 | Threshold for *_threshold volumes
+  save_every_batch: true                            # bool | default=true | Flush CSVs after each batch (safer for long runs)
+  csv_inputs: "inputs_context.csv"                  # str | default="inputs_context.csv" | CSV filename for the used contexts (context_attributes columns)
+  csv_outputs: "outputs_predicted.csv"              # str | default="outputs_predicted.csv" | CSV filename for FP predictions (full attributes columns)
+
+```
+
+#### CH 2-Phase
+
+```yaml
+data_path: "../data/sample_CH_two_phase/train/part_*.h5"  # wildcard to use all parts
+image_shape: [1, 128, 128, 64]
+attributes:
+  - norm_STAT_e
+  - ABS_f_D
+  - ABS_f_D
+  - DISS_wf10_D
+  - CT_f_e_conn
+  - CT_f_D_tort1
+  - CT_f_A_tort1
+
+vae.pretrained_path: "../models/weights/CH_2phase/vae.pt"
+vae.latent_dim_channels: 4
+fp.pretrained_path: "../models/weights/CH_2phase/fp.pt"
+ddpm.pretrained_path: "../models/weights/CH_2phase/ddpm.pt"
+ddpm.context_attributes:
+  - ABS_f_D
+  - CT_f_D_tort1
+  - CT_f_A_tort1
+```
+
+---
+
+#### CH 3-Phase
+
+```yaml
+data_path: "../data/sample_CH_three_phase/train/part_*.h5"  # wildcard to use all parts
+image_shape: [1, 128, 128, 64]
+attributes:
+  - vol_frac_D
+  - vol_frac_M
+  - tortuosity_A
+  - tortuosity_D
+  - phi
+  - chi
+  - log_time
+
+vae.pretrained_path: "../models/weights/CH_3phase/vae.pt"
+vae.latent_dim_channels: 4
+fp.pretrained_path: "../models/weights/CH_3phase/fp.pt"
+ddpm.pretrained_path: "../models/weights/CH_3phase/ddpm.pt"
+ddpm.context_attributes:
+  - vol_frac_D
+  - vol_frac_M
+  - tortuosity_A
+  - tortuosity_D
+```
+
+---
+
+#### Experimental
+
+```yaml
+data_path: "../data/experimental/train/train.h5"  # Path to the experimental dataset
+image_shape: [1, 64, 64, 64]
+attributes:
+  - ABS_f_D
+  - CT_f_D_tort1
+  - CT_f_A_tort1
+
+vae.pretrained_path: "../models/weights/experimental/vae.pt"
+vae.latent_dim_channels: 1
+fp.pretrained_path: "../models/weights/experimental/fp.pt"
+ddpm.pretrained_path: "../models/weights/experimental/ddpm.pt"
+ddpm.context_attributes:
+  - ABS_f_D
+  - CT_f_D_tort1
+  - CT_f_A_tort1
+```
+
+
+
+
 ## 📄 License
 
 [MIT License](LICENSE)

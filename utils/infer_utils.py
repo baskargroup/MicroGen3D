@@ -186,7 +186,7 @@ def run_generation_loop(
     """
     os.makedirs(output_dir, exist_ok=True)
     if write_vti:
-        for sub in ["generated_raw", "generated_threshold", "original", "reconstructed_raw", "reconstructed_threshold"]:
+        for sub in ["generated_raw", "generated_threshold"]:
             os.makedirs(os.path.join(output_dir, sub), exist_ok=True)
 
     features_list, features_pred_list = [], []
@@ -215,16 +215,16 @@ def run_generation_loop(
             for i in range(B):
                 base = f"sample_{sample_counter + i:06d}.vti"
 
-                if x_opt is not None:
-                    for name, arr in {
-                        "original": x_opt[i],
-                        "reconstructed_raw": x_hat[i],
-                        "reconstructed_threshold": (x_hat[i] > threshold).float(),
-                    }.items():
-                        params = {'path': os.path.join(output_dir, name), 'file_name': base,
-                                  'arr': arr.squeeze().detach().cpu().numpy()}
-                        exporter = numpy_exporters_mod.ToVti(**params)
-                        exporter.export()
+                # if x_opt is not None:
+                #     for name, arr in {
+                #         "original": x_opt[i],
+                #         "reconstructed_raw": x_hat[i],
+                #         "reconstructed_threshold": (x_hat[i] > threshold).float(),
+                #     }.items():
+                #         params = {'path': os.path.join(output_dir, name), 'file_name': base,
+                #                   'arr': arr.squeeze().detach().cpu().numpy()}
+                #         exporter = numpy_exporters_mod.ToVti(**params)
+                #         exporter.export()
 
                 for name, arr in {
                     "generated_raw": x_gen[i],
