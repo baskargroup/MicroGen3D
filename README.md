@@ -152,6 +152,8 @@ ddpm:
 
 ```
 
+To learn more about the attributes and their meanings, see this [link](https://owodolab.github.io/graspi/listOfDescriptors.html).
+
 ---
 
 ## 🧪 Pretrained Config Variants
@@ -247,6 +249,7 @@ ddpm.context_attributes:
   - CT_f_D_tort1
   - CT_f_A_tort1
 ```
+
 
 ## 🧠 Inference
 
