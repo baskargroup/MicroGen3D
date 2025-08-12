@@ -287,15 +287,27 @@ Running inference generates the following outputs:
 
 ### Inference Modes
 
-You can run inference in two ways:
+You can run inference in three modes, controlled by the `inference.mode` parameter in `config_infer.yaml`:
 
-1. **Use Validation Data**  
-   - The script reconstructs and generates outputs based on existing dataset samples.
+#### 1. **dataset**
 
-2. **Use Custom Context**  
-   - Provide manual context vectors, either:
-     - **Single context vector** – Generate multiple outputs under the same conditions.  
-     - **Matrix of context vectors** – Generate varied outputs for different conditions.
+* Uses pre-split validation (or training) data, which is passed through the VAE encoder and Feature Predictor (FP) to generate the context.
+* Context values are extracted automatically from the dataset using the trained FP.
+
+#### 2. **constant**
+
+* Uses a single fixed context vector provided by the user in the configuration file.
+* The same context is applied to all generated samples.
+* Useful for generating variations of microstructures under identical target conditions.
+
+#### 3. **random**
+
+* Generates a matrix of context vectors by sampling randomly within user-defined ranges for each attribute.
+* Each generated sample will have a different target condition.
+
+**Tip:**
+In `dataset` mode, `dataset_loader` can be set to `"val"` or `"train"` to choose the data split.
+All modes use the same inference script—the only difference is the source of the context.
 
 ---
 
